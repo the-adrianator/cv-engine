@@ -10,10 +10,20 @@ const isProtectedRoute = createRouteMatcher([
   "/api/usage(.*)",
 ]);
 
-export default clerkMiddleware((auth, req) => {
+// Define public routes that should NOT be protected (auth routes)
+const isPublicRoute = createRouteMatcher([
+  "/auth(.*)", // All auth routes are public
+]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // Skip protection for public routes
+  if (isPublicRoute(req)) {
+    return;
+  }
+
   // Protect routes that match the pattern
   if (isProtectedRoute(req)) {
-    auth().protect();
+    await auth.protect();
   }
 });
 
