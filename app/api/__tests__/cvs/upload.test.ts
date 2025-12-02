@@ -19,7 +19,7 @@ jest.mock('next/server', () => ({
 
 import { POST } from '@/app/api/cvs/upload/route';
 import { auth, currentUser } from '@clerk/nextjs/server';
-import { createServerClient } from '@/lib/supabase/server';
+import { createServerClient, createAdminClient } from '@/lib/supabase/server';
 import { createCV } from '@/lib/supabase/db';
 
 // Mock dependencies
@@ -30,6 +30,7 @@ jest.mock('@/lib/supabase/db');
 const mockAuth = auth as jest.MockedFunction<typeof auth>;
 const mockCurrentUser = currentUser as jest.MockedFunction<typeof currentUser>;
 const mockCreateServerClient = createServerClient as jest.MockedFunction<typeof createServerClient>;
+const mockCreateAdminClient = createAdminClient as jest.MockedFunction<typeof createAdminClient>;
 const mockCreateCV = createCV as jest.MockedFunction<typeof createCV>;
 
 describe('POST /api/cvs/upload', () => {
@@ -57,6 +58,7 @@ describe('POST /api/cvs/upload', () => {
       emailAddresses: [{ emailAddress: 'test@example.com' }],
     } as any);
     mockCreateServerClient.mockReturnValue(mockSupabase as any);
+    mockCreateAdminClient.mockReturnValue(mockSupabase as any);
     mockUpload.mockResolvedValue({ error: null });
     mockGetPublicUrl.mockReturnValue({
       data: { publicUrl: 'https://example.com/image.png' },
