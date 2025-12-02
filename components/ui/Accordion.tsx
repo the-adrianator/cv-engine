@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import type { ReactNode } from "react";
 import { createContext, useContext, useState } from "react";
@@ -75,7 +75,9 @@ export const AccordionItem: React.FC<AccordionItemProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`overflow-hidden border-b border-gray-200 dark:border-gray-700 ${className}`}>
+    <div
+      className={`overflow-hidden border-b border-gray-200 dark:border-gray-700 ${className}`}
+    >
       {children}
     </div>
   );
@@ -100,7 +102,7 @@ export const AccordionHeader: React.FC<AccordionHeaderProps> = ({
   const { toggleItem, isItemActive } = useAccordion();
   const isActive = isItemActive(itemId);
 
-  const strokeColor = theme === 'dark' ? '#cbd5e1' : '#98A2B3';
+  const strokeColor = theme === "dark" ? "#cbd5e1" : "#98A2B3";
 
   const defaultIcon = (
     <svg
@@ -130,7 +132,7 @@ export const AccordionHeader: React.FC<AccordionHeaderProps> = ({
       onClick={handleClick}
       className={`
         w-full px-4 py-3 text-left
-        focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-800
+        focus:outline-none
         transition-colors duration-200 flex items-center justify-between cursor-pointer
         ${className}
       `}
@@ -166,8 +168,7 @@ export const AccordionContent: React.FC<AccordionContentProps> = ({
         ${className}
       `}
     >
-      <div className="px-4 py-3">{children}</div>
+      <div>{children}</div>
     </div>
   );
 };
-

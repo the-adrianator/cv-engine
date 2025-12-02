@@ -1,6 +1,38 @@
 // Learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
+// Polyfill for Request/Response (needed for Next.js API routes)
+// Node.js 18+ has built-in fetch, but Jest may need polyfill
+if (typeof global.Request === 'undefined') {
+  try {
+    const undici = require('undici');
+    global.Request = undici.Request;
+    global.Response = undici.Response;
+    global.Headers = undici.Headers;
+  } catch (e) {
+    // Fallback: create minimal mocks
+    global.Request = class Request {
+      constructor(input, init) {
+        this.url = typeof input === 'string' ? input : input.url;
+        this.method = init?.method || 'GET';
+        this.headers = new Map();
+        this.body = init?.body;
+      }
+    };
+    global.Response = class Response {
+      constructor(body, init) {
+        this.body = body;
+        this.status = init?.status || 200;
+        this.statusText = init?.statusText || 'OK';
+        this.headers = new Map();
+      }
+      async json() {
+        return JSON.parse(this.body);
+      }
+    };
+  }
+}
+
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter() {
@@ -70,4 +102,9 @@ const localStorageMock = {
   clear: jest.fn(),
 };
 global.localStorage = localStorageMock;
+
+// Mock Supabase environment variables for tests
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
 

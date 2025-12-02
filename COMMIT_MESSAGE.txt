@@ -1,55 +1,75 @@
-feat: add Supabase integration, component migration, and theme system
+feat: implement CV upload, OpenAI analysis, and multi-page PDF support
 
-This commit introduces major infrastructure and UI components for the CV Engine
-application, establishing the foundation for data persistence, component library,
-and user experience enhancements.
+This commit adds the core functionality for CV upload, processing, and AI-powered
+analysis, establishing the complete workflow from file upload to feedback display.
 
-Database & Backend:
-- Integrate Supabase with server and client-side clients
-- Add database schema for users, CVs, usage tracking, and subscriptions
-- Configure Supabase clients to work with Clerk authentication
-- Add TypeScript types for database entities
+CV Upload & Processing:
+- Add upload page with form for company name, job title, and job description
+- Implement PDF to image conversion using PDF.js with multi-page support
+- Add client-side PDF processing with worker file management
+- Create postinstall script to copy PDF.js worker to public folder
+- Support uploading PDF files and converted images to Supabase Storage
+- Add file validation (PDF type, 20MB size limit)
 
-Component Migration:
-- Migrate CV components from ai-cv-analyser (CVCard, FileUploader, ATS, Details, Summary, ScoreBadge, ScoreCircle, ScoreGauge)
-- Add UI components (Accordion, ThemeToggle)
-- Create component test suite with Jest and React Testing Library
+OpenAI Integration:
+- Implement CV analysis using OpenAI Vision API (GPT-4o)
+- Add structured feedback generation with ATS, tone, content, structure, and skills scores
+- Create analysis instructions that incorporate job title and description
+- Support background analysis processing after upload
+- Add error handling and logging for OpenAI API calls
+- Configure British English spelling in analysis output
 
-Theme Management:
-- Implement Zustand store for theme state management with persistence
-- Add theme initialization script to prevent flash of wrong theme
-- Integrate theme toggle component in main layout
-- Update global styles with comprehensive light/dark theme support
-- Add Mona Sans font and enhanced color system
+API Routes:
+- Add /api/cvs/upload route for handling CV uploads with file storage
+- Add /api/cvs/analyze route for triggering CV analysis
+- Add /api/cvs/[id] route for fetching CV details with signed URLs
+- Implement proper authentication checks for all API routes
+- Add background processing for AI analysis after upload
 
-Testing Infrastructure:
-- Set up Jest with jsdom environment
-- Configure React Testing Library for component testing
-- Add test utilities and setup files
-- Create initial test suite for migrated components
+Database & Storage:
+- Fix schema: change user_id from UUID to TEXT to match Clerk user IDs
+- Add migration script for user_id type conversion
+- Update all foreign key references to use TEXT for user_id
+- Implement multi-page image path storage as JSON array
+- Add signed URL generation for private storage bucket access
+- Create storage utilities for file upload and retrieval
 
-UI Enhancements:
-- Add utility functions (cn, formatSize, generateUUID) using clsx and tailwind-merge
-- Enhance home page with mock CV data and CVCard components
-- Update main layout with theme toggle and improved navigation
-- Add comprehensive global CSS with custom theme variables
-- Integrate Lucide React icons and react-dropzone
+CV Detail View:
+- Create CVDetailView component with multi-page image support
+- Add real-time feedback polling while analysis is in progress
+- Implement image carousel for multi-page CVs
+- Display comprehensive feedback with Summary, ATS, and Details components
+- Add loading states and error handling
+
+Home Page:
+- Integrate real CV data from Supabase database
+- Add user creation on first login
+- Fetch and display user's CVs with proper authentication
+- Remove mock data in favor of database-driven content
+- Add proper error handling for database queries
+
+Component Enhancements:
+- Update Details component with improved styling and layout
+- Enhance Accordion component with better accessibility
+- Add CVDetailView component for full CV feedback display
+- Improve component test coverage
+
+Testing:
+- Add API route tests for CV upload functionality
+- Update Jest setup with additional mocks and utilities
+- Improve test coverage for theme toggle component
 
 Dependencies:
-- Add @supabase/supabase-js for database operations
-- Add zustand for state management
-- Add testing libraries (Jest, React Testing Library, @testing-library/user-event)
-- Add UI utilities (clsx, tailwind-merge, tw-animate-css)
-- Add react-dropzone for file uploads
-- Add lucide-react for icons
+- Add openai package for AI analysis
+- Add pdfjs-dist for PDF processing
+- Add undici for improved fetch support in Node.js
 
 Documentation:
-- Add SUPABASE_SETUP.md with database setup instructions
-- Add TESTING.md and TESTING_GUIDE.md for testing documentation
-- Add COMPONENTS_MIGRATED.md tracking component migration
+- Add OPENAI_SETUP.md with API configuration instructions
+- Add multiple debugging and migration guides
+- Document PDF worker setup and troubleshooting
 
 Configuration:
-- Update TypeScript config for path aliases
-- Add theme script to root layout for proper theme initialization
-- Update environment variable template with Supabase configuration
-
+- Update TypeScript types for multi-page image support
+- Add postinstall script for PDF worker file management
+- Configure API route timeouts and runtime settings

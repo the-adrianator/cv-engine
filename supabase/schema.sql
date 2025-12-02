@@ -5,8 +5,9 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table (linked to Clerk user IDs)
+-- NOTE: Clerk user IDs are strings like "user_36IAoOrvCH6oMhrKzk8nHS9pqpq", not UUIDs
 CREATE TABLE IF NOT EXISTS users (
-  id UUID PRIMARY KEY, -- Clerk user ID
+  id TEXT PRIMARY KEY, -- Clerk user ID (string, not UUID)
   email TEXT NOT NULL,
   full_name TEXT,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -16,7 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
 -- CVs table
 CREATE TABLE IF NOT EXISTS cvs (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   company_name TEXT,
   job_title TEXT,
   job_description TEXT,
@@ -34,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_cvs_created_at ON cvs(created_at DESC);
 -- Usage tracking table
 CREATE TABLE IF NOT EXISTS usage_tracking (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   scans_this_month INTEGER DEFAULT 0,
   total_scans INTEGER DEFAULT 0,
   last_reset_date DATE DEFAULT CURRENT_DATE,
@@ -49,7 +50,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_user_id ON usage_tracking(user_id);
 -- Subscriptions table (for future Stripe integration)
 CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   stripe_customer_id TEXT,
   stripe_subscription_id TEXT,
   tier TEXT NOT NULL DEFAULT 'free', -- 'free' | 'premium'

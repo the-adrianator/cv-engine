@@ -1,7 +1,9 @@
-import { auth } from "@clerk/nextjs/server";
+import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import CVCard from "@/components/cv/CVCard";
+import { getUserCVs, getOrCreateUser } from "@/lib/supabase/db";
+import { createServerClient } from "@/lib/supabase/server";
 
 // Mock data for testing components
 const mockResumes: Resume[] = [
@@ -23,25 +25,42 @@ const mockResumes: Resume[] = [
       toneAndStyle: {
         score: 90,
         tips: [
-          { type: "good", tip: "Professional tone", explanation: "Your CV maintains a professional and confident tone throughout." },
+          {
+            type: "good",
+            tip: "Professional tone",
+            explanation:
+              "Your CV maintains a professional and confident tone throughout.",
+          },
         ],
       },
       content: {
         score: 90,
         tips: [
-          { type: "good", tip: "Clear achievements", explanation: "Your achievements are well-quantified and impactful." },
+          {
+            type: "good",
+            tip: "Clear achievements",
+            explanation: "Your achievements are well-quantified and impactful.",
+          },
         ],
       },
       structure: {
         score: 90,
         tips: [
-          { type: "good", tip: "Logical flow", explanation: "The structure follows a logical progression." },
+          {
+            type: "good",
+            tip: "Logical flow",
+            explanation: "The structure follows a logical progression.",
+          },
         ],
       },
       skills: {
         score: 90,
         tips: [
-          { type: "good", tip: "Relevant skills", explanation: "Your skills are highly relevant to the role." },
+          {
+            type: "good",
+            tip: "Relevant skills",
+            explanation: "Your skills are highly relevant to the role.",
+          },
         ],
       },
     },
@@ -64,25 +83,41 @@ const mockResumes: Resume[] = [
       toneAndStyle: {
         score: 60,
         tips: [
-          { type: "improve", tip: "Inconsistent tone", explanation: "The tone varies throughout the document." },
+          {
+            type: "improve",
+            tip: "Inconsistent tone",
+            explanation: "The tone varies throughout the document.",
+          },
         ],
       },
       content: {
         score: 50,
         tips: [
-          { type: "improve", tip: "Vague descriptions", explanation: "Some descriptions lack specific details." },
+          {
+            type: "improve",
+            tip: "Vague descriptions",
+            explanation: "Some descriptions lack specific details.",
+          },
         ],
       },
       structure: {
         score: 60,
         tips: [
-          { type: "improve", tip: "Section ordering", explanation: "Consider reordering sections for better flow." },
+          {
+            type: "improve",
+            tip: "Section ordering",
+            explanation: "Consider reordering sections for better flow.",
+          },
         ],
       },
       skills: {
         score: 55,
         tips: [
-          { type: "improve", tip: "Skill gaps", explanation: "Some relevant skills are missing." },
+          {
+            type: "improve",
+            tip: "Skill gaps",
+            explanation: "Some relevant skills are missing.",
+          },
         ],
       },
     },
@@ -97,9 +132,79 @@ export default async function HomePage() {
     redirect("/auth/sign-in?redirect_url=/");
   }
 
-  // TODO: Fetch CVs from Supabase
-  // For now, using mock data for testing
-  const cvs: Resume[] = [];
+  // Get or create user
+  const user = await currentUser();
+  if (!user) {
+    redirect("/auth/sign-in?redirect_url=/");
+  }
+
+  const { user: dbUser, error: userError } = await getOrCreateUser(
+    userId,
+    user.emailAddresses[0]?.emailAddress || "",
+    user.fullName || undefined
+  );
+
+  if (userError) {
+    console.error("Error getting/creating user:", userError);
+  }
+
+  // Fetch CVs from Supabase
+  const { cvs: dbCVs, error: cvsError } = await getUserCVs(userId);
+
+  if (cvsError) {
+    console.error("Error fetching CVs:", cvsError);
+  }
+
+  // Convert database CVs to Resume format
+  // Note: For the home page, we'll use a placeholder or generate signed URLs
+  // For better performance, we could cache thumbnails or use a different approach
+  const { getSignedUrl } = await import("@/lib/supabase/storage");
+
+  const cvs: Resume[] = await Promise.all(
+    (dbCVs || []).map(async (cv) => {
+      // Parse image paths (can be a single string or JSON array for multi-page)
+      let imagePaths: string[] = [];
+      try {
+        const parsed = JSON.parse(cv.image_path);
+        imagePaths = Array.isArray(parsed) ? parsed : [cv.image_path];
+      } catch {
+        // If not JSON, treat as single image path
+        imagePaths = [cv.image_path];
+      }
+      
+      // Get signed URL for first image (for thumbnail on home page)
+      const { url: imageUrl, error: imageError } = await getSignedUrl(
+        imagePaths[0],
+        3600
+      );
+
+      if (imageError) {
+        console.error(
+          `Error generating signed URL for CV ${cv.id}:`,
+          imageError
+        );
+      }
+
+      // Default feedback structure if not available
+      const defaultFeedback: Feedback = {
+        overallScore: 0,
+        ATS: { score: 0, tips: [] },
+        toneAndStyle: { score: 0, tips: [] },
+        content: { score: 0, tips: [] },
+        structure: { score: 0, tips: [] },
+        skills: { score: 0, tips: [] },
+      };
+
+      return {
+        id: cv.id,
+        companyName: cv.company_name || undefined,
+        jobTitle: cv.job_title || undefined,
+        imagePath: imageUrl || "", // Use signed URL
+        resumePath: cv.pdf_path, // Will be converted to signed URL on detail page
+        feedback: (cv.feedback as unknown as Feedback) || defaultFeedback,
+      };
+    })
+  );
 
   return (
     <main className="min-h-screen p-8 bg-gradient-to-b from-blue-50 to-pink-50 dark:from-gray-900 dark:to-purple-900">

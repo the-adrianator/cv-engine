@@ -51,13 +51,16 @@ export function getPublicUrl(path: string): string {
 /**
  * Get a signed URL for a file (server-side)
  * Use this for private files that need temporary access
+ * Requires service role key for private buckets
  */
 export async function getSignedUrl(
   path: string,
   expiresIn: number = 3600
 ): Promise<{ url: string | null; error: Error | null }> {
   try {
-    const supabase = createServerClient();
+    // Use admin client to generate signed URLs for private buckets
+    const { createAdminClient } = await import("./server");
+    const supabase = createAdminClient();
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)

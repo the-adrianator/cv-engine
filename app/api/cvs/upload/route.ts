@@ -1,0 +1,249 @@
+/**
+ * API Route: CV Upload
+ * 
+ * Handles CV file upload, PDF to image conversion, storage, and database record creation
+ */
+
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient, createAdminClient } from "@/lib/supabase/server";
+import { createCV, updateCV } from "@/lib/supabase/db";
+import { generateUUID } from "@/lib/utils";
+import type { Json } from "@/types/database";
+
+// Increase body size limit for file uploads (20MB)
+export const maxDuration = 60; // 60 seconds max
+export const runtime = "nodejs";
+
+export async function POST(request: NextRequest) {
+  try {
+    // Check authentication
+    const { userId } = await auth();
+    if (!userId) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    // Get user info
+    const user = await currentUser();
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found" },
+        { status: 404 }
+      );
+    }
+
+    // Parse form data
+    const formData = await request.formData();
+    const file = formData.get("file") as File;
+    const companyName = formData.get("companyName") as string;
+    const jobTitle = formData.get("jobTitle") as string;
+    const jobDescription = formData.get("jobDescription") as string;
+    const totalPages = parseInt(formData.get("totalPages") as string) || 1;
+    
+    // Get all image blobs (for multi-page support)
+    const imageBlobs: Blob[] = [];
+    for (let i = 0; i < totalPages; i++) {
+      const blob = formData.get(`imageBlob-${i}`) as Blob;
+      if (blob) {
+        imageBlobs.push(blob);
+      }
+    }
+    
+    // Fallback to single image if no multi-page images found
+    if (imageBlobs.length === 0) {
+      const singleBlob = formData.get("imageBlob") as Blob;
+      if (singleBlob) {
+        imageBlobs.push(singleBlob);
+      }
+    }
+
+    // Validate inputs
+    if (!file || !companyName || !jobTitle || !jobDescription || imageBlobs.length === 0) {
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
+    }
+
+    // Validate file type
+    if (file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "File must be a PDF" },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (20MB max)
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: "File size exceeds 20MB limit" },
+        { status: 400 }
+      );
+    }
+
+    // Use admin client for storage uploads to bypass RLS
+    // Storage buckets with RLS require service role key for uploads
+    const supabase = createAdminClient();
+    const cvId = generateUUID();
+
+    // Upload PDF file to Supabase Storage
+    const pdfPath = `${userId}/${cvId}.pdf`;
+    const { error: pdfUploadError, data: pdfData } = await supabase.storage
+      .from("cvs")
+      .upload(pdfPath, file, {
+        cacheControl: "3600",
+        upsert: false,
+        contentType: "application/pdf",
+      });
+
+    if (pdfUploadError) {
+      console.error("PDF upload error:", pdfUploadError);
+      console.error("PDF upload error details:", JSON.stringify(pdfUploadError, null, 2));
+      return NextResponse.json(
+        { 
+          error: "Failed to upload PDF file",
+          details: pdfUploadError.message || "Unknown error"
+        },
+        { status: 500 }
+      );
+    }
+
+    // Upload all image files to Supabase Storage
+    const imagePaths: string[] = [];
+    for (let i = 0; i < imageBlobs.length; i++) {
+      const imagePath = imageBlobs.length > 1 
+        ? `${userId}/${cvId}-page-${i + 1}.png`
+        : `${userId}/${cvId}.png`;
+      
+      const { error: imageUploadError } = await supabase.storage
+        .from("cvs")
+        .upload(imagePath, imageBlobs[i], {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: "image/png",
+        });
+
+      if (imageUploadError) {
+        console.error(`Image upload error for page ${i + 1}:`, imageUploadError);
+        // Clean up PDF and previously uploaded images
+        await supabase.storage.from("cvs").remove([pdfPath, ...imagePaths]);
+        return NextResponse.json(
+          { 
+            error: `Failed to upload image file (page ${i + 1})`,
+            details: imageUploadError.message || "Unknown error"
+          },
+          { status: 500 }
+        );
+      }
+      
+      imagePaths.push(imagePath);
+    }
+    
+    // Store the first image path for backward compatibility and analysis
+    const imagePath = imagePaths[0];
+
+    // Use regular client for database operations
+    const dbClient = createServerClient();
+    
+    // Create database record
+    // Store image paths as JSON array for multi-page support
+    const imagePathsJson = JSON.stringify(imagePaths);
+    const { cv, error: dbError } = await createCV({
+      id: cvId,
+      user_id: userId,
+      company_name: companyName,
+      job_title: jobTitle,
+      job_description: jobDescription,
+      pdf_path: pdfPath,
+      image_path: imagePathsJson, // Store as JSON array for multi-page support
+      feedback: null, // Will be populated after AI analysis
+    });
+
+    if (dbError || !cv) {
+      console.error("Database error:", dbError);
+      // Clean up uploaded files
+      await supabase.storage.from("cvs").remove([pdfPath, ...imagePaths]);
+      return NextResponse.json(
+        { error: "Failed to create CV record" },
+        { status: 500 }
+      );
+    }
+
+    // Trigger CV analysis in the background (don't wait for it)
+    // The analysis will update the CV record when complete
+    // Note: We call the analyze function directly instead of using fetch
+    // to avoid authentication issues with server-to-server calls
+    const { analyzeCV, prepareInstructions } = await import("@/lib/openai/analyze");
+    const { updateCV } = await import("@/lib/supabase/db");
+    const { getSignedUrl } = await import("@/lib/supabase/storage");
+    
+    // Run analysis in background (don't await)
+    (async () => {
+      try {
+        console.log('Starting background CV analysis:', cv.id);
+        
+        // Generate signed URL for the first image (for analysis)
+        const firstImagePath = imagePaths[0];
+        const { url: finalImageUrl, error: urlError } = await getSignedUrl(firstImagePath, 3600);
+        if (urlError || !finalImageUrl) {
+          console.error("Error generating signed URL for analysis:", urlError);
+          return;
+        }
+        
+        // Prepare instructions
+        const instructions = prepareInstructions({ jobTitle, jobDescription });
+        
+        // Analyze CV
+        console.log('Calling OpenAI for CV analysis...');
+        const { feedback, error: analysisError } = await analyzeCV(finalImageUrl, instructions);
+        
+        if (analysisError || !feedback) {
+          console.error("OpenAI analysis failed:", analysisError);
+          return;
+        }
+        
+        // Update CV record
+        console.log('Saving feedback to database...');
+        const feedbackJson = JSON.parse(JSON.stringify(feedback)) as Json;
+        const { error: updateError } = await updateCV(cv.id, userId, {
+          feedback: feedbackJson,
+        });
+        
+        if (updateError) {
+          console.error("Failed to save feedback:", updateError);
+        } else {
+          console.log('CV analysis complete and saved:', cv.id);
+        }
+      } catch (error) {
+        console.error('Background analysis error:', error);
+      }
+    })();
+
+    // Return success without URLs (they'll be generated on the detail page)
+    return NextResponse.json(
+      {
+        success: true,
+        cv: {
+          id: cv.id,
+          companyName: cv.company_name,
+          jobTitle: cv.job_title,
+        },
+      },
+      { status: 201 }
+    );
+  } catch (error) {
+    console.error("Upload error:", error);
+    return NextResponse.json(
+      {
+        error: "Internal server error",
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+

@@ -10,6 +10,7 @@ interface Resume {
   companyName?: string;
   jobTitle?: string;
   imagePath: string;
+  imagePaths?: string[]; // For multi-page support
   resumePath: string;
   feedback: Feedback;
 }
