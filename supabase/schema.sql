@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS cvs (
   pdf_path TEXT NOT NULL, -- Supabase Storage path
   image_path TEXT NOT NULL, -- Supabase Storage path
   feedback JSONB, -- Analysis results from OpenAI
+  analysis_status TEXT DEFAULT 'pending' CHECK (analysis_status IN ('pending', 'succeeded', 'failed')), -- Status of CV analysis
+  analysis_error TEXT, -- Error details when analysis fails
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -31,6 +33,7 @@ CREATE TABLE IF NOT EXISTS cvs (
 -- Indexes for CVs table
 CREATE INDEX IF NOT EXISTS idx_cvs_user_id ON cvs(user_id);
 CREATE INDEX IF NOT EXISTS idx_cvs_created_at ON cvs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_cvs_analysis_status ON cvs(analysis_status);
 
 -- Usage tracking table
 CREATE TABLE IF NOT EXISTS usage_tracking (

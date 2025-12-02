@@ -170,7 +170,7 @@ export default async function HomePage() {
         // If not JSON, treat as single image path
         imagePaths = [cv.image_path];
       }
-      
+
       // Get signed URL for first image (for thumbnail on home page)
       const { url: imageUrl, error: imageError } = await getSignedUrl(
         imagePaths[0],

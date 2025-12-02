@@ -79,7 +79,10 @@ export default function UploadPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.error || "Failed to upload CV");
+        const errorMsg = errorData.error || "Failed to upload CV";
+        const details = errorData.details || errorData.message;
+        setError(details ? `${errorMsg}: ${details}` : errorMsg);
+        console.error("Upload error:", errorData);
         setIsProcessing(false);
         return;
       }

@@ -49,6 +49,8 @@ export interface Database {
           pdf_path: string;
           image_path: string;
           feedback: Json | null;
+          analysis_status: string | null;
+          analysis_error: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -61,6 +63,8 @@ export interface Database {
           pdf_path: string;
           image_path: string;
           feedback?: Json | null;
+          analysis_status?: string | null;
+          analysis_error?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -73,6 +77,8 @@ export interface Database {
           pdf_path?: string;
           image_path?: string;
           feedback?: Json | null;
+          analysis_status?: string | null;
+          analysis_error?: string | null;
           created_at?: string;
           updated_at?: string;
         };

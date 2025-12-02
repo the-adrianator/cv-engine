@@ -149,10 +149,13 @@ export async function POST(request: NextRequest) {
     // Use regular client for database operations
     const dbClient = createServerClient();
     
-    // Create database record
+    // Create database record with analysis_status set to 'pending'
     // Store image paths as JSON array for multi-page support
     const imagePathsJson = JSON.stringify(imagePaths);
-    const { cv, error: dbError } = await createCV({
+    
+    // Try to create CV with analysis_status (if migration has been run)
+    // If it fails due to missing column, retry without it for backward compatibility
+    let cvData: Parameters<typeof createCV>[0] = {
       id: cvId,
       user_id: userId,
       company_name: companyName,
@@ -161,36 +164,72 @@ export async function POST(request: NextRequest) {
       pdf_path: pdfPath,
       image_path: imagePathsJson, // Store as JSON array for multi-page support
       feedback: null, // Will be populated after AI analysis
-    });
+      analysis_status: 'pending', // Set status to pending before queuing analysis
+    };
+    
+    let { cv, error: dbError } = await createCV(cvData);
+    
+    // If error is due to missing column (migration not run), retry without analysis_status
+    if (dbError && dbError.message?.includes('column') && dbError.message?.includes('analysis_status')) {
+      console.warn("analysis_status column not found, creating CV without it (migration may not be run)");
+      const { analysis_status, ...cvDataWithoutStatus } = cvData;
+      const retryResult = await createCV(cvDataWithoutStatus);
+      cv = retryResult.cv;
+      dbError = retryResult.error;
+    }
 
     if (dbError || !cv) {
       console.error("Database error:", dbError);
+      console.error("Database error details:", JSON.stringify(dbError, null, 2));
       // Clean up uploaded files
       await supabase.storage.from("cvs").remove([pdfPath, ...imagePaths]);
       return NextResponse.json(
-        { error: "Failed to create CV record" },
+        { 
+          error: "Failed to create CV record",
+          details: dbError?.message || "Unknown database error"
+        },
         { status: 500 }
       );
     }
 
-    // Trigger CV analysis in the background (don't wait for it)
-    // The analysis will update the CV record when complete
-    // Note: We call the analyze function directly instead of using fetch
-    // to avoid authentication issues with server-to-server calls
-    const { analyzeCV, prepareInstructions } = await import("@/lib/openai/analyze");
-    const { updateCV } = await import("@/lib/supabase/db");
-    const { getSignedUrl } = await import("@/lib/supabase/storage");
-    
-    // Run analysis in background (don't await)
-    (async () => {
+    // Trigger CV analysis using unstable_after to attach to request lifecycle
+    // This ensures the analysis Promise is attached to the request lifecycle
+    // and will complete even after the response is sent
+    // Fallback to IIFE if unstable_after is not available
+    const runAnalysis = async () => {
       try {
         console.log('Starting background CV analysis:', cv.id);
+        
+        // Import analysis dependencies
+        const { analyzeCV, prepareInstructions } = await import("@/lib/openai/analyze");
+        const { updateCV } = await import("@/lib/supabase/db");
+        const { getSignedUrl } = await import("@/lib/supabase/storage");
+        
+        // Helper to update CV with status (handles missing column gracefully)
+        const updateCVWithStatus = async (updates: Parameters<typeof updateCV>[2]) => {
+          const result = await updateCV(cv.id, userId, updates);
+          // If error is due to missing analysis_status column, try without it
+          if (result.error) {
+            const errorMsg = result.error.message || String(result.error);
+            if (errorMsg.includes('column') && errorMsg.includes('analysis_status')) {
+              console.warn("analysis_status column not found, updating without status fields");
+              const { analysis_status, analysis_error, ...updatesWithoutStatus } = updates;
+              return await updateCV(cv.id, userId, updatesWithoutStatus);
+            }
+          }
+          return result;
+        };
         
         // Generate signed URL for the first image (for analysis)
         const firstImagePath = imagePaths[0];
         const { url: finalImageUrl, error: urlError } = await getSignedUrl(firstImagePath, 3600);
         if (urlError || !finalImageUrl) {
           console.error("Error generating signed URL for analysis:", urlError);
+          const errorMessage = urlError?.message || "Failed to generate signed URL";
+          await updateCVWithStatus({
+            analysis_status: 'failed',
+            analysis_error: errorMessage,
+          });
           return;
         }
         
@@ -203,25 +242,73 @@ export async function POST(request: NextRequest) {
         
         if (analysisError || !feedback) {
           console.error("OpenAI analysis failed:", analysisError);
+          const errorMessage = analysisError?.message || "Analysis failed";
+          await updateCVWithStatus({
+            analysis_status: 'failed',
+            analysis_error: errorMessage,
+          });
           return;
         }
         
-        // Update CV record
+        // Update CV record with feedback and success status
         console.log('Saving feedback to database...');
         const feedbackJson = JSON.parse(JSON.stringify(feedback)) as Json;
-        const { error: updateError } = await updateCV(cv.id, userId, {
+        const { error: updateError } = await updateCVWithStatus({
           feedback: feedbackJson,
+          analysis_status: 'succeeded',
+          analysis_error: null, // Clear any previous errors
         });
         
         if (updateError) {
           console.error("Failed to save feedback:", updateError);
+          await updateCVWithStatus({
+            analysis_status: 'failed',
+            analysis_error: updateError.message || "Failed to save feedback",
+          });
         } else {
           console.log('CV analysis complete and saved:', cv.id);
         }
       } catch (error) {
         console.error('Background analysis error:', error);
+        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+        try {
+          const { updateCV } = await import("@/lib/supabase/db");
+          // Try to update status, but don't fail if column doesn't exist
+          const statusResult = await updateCV(cv.id, userId, {
+            analysis_status: 'failed',
+            analysis_error: errorMessage,
+          });
+          if (statusResult.error) {
+            const errorMsg = statusResult.error.message || String(statusResult.error);
+            if (errorMsg.includes('column') && errorMsg.includes('analysis_status')) {
+              // Column doesn't exist, just log the error
+              console.warn("analysis_status column not found, skipping status update");
+            } else {
+              console.error("Failed to update analysis status:", statusResult.error);
+            }
+          }
+        } catch (updateErr) {
+          console.error("Failed to update analysis status:", updateErr);
+        }
       }
-    })();
+    };
+    
+    // Use unstable_after if available, otherwise use IIFE fallback
+    try {
+      // Try to use unstable_after (Next.js 15+)
+      const { unstable_after } = await import("next/server");
+      if (unstable_after) {
+        (unstable_after as any)(runAnalysis);
+      } else {
+        throw new Error("unstable_after not available");
+      }
+    } catch {
+      // Fallback: run as IIFE (fire-and-forget) if unstable_after not available
+      console.warn("unstable_after not available, using IIFE fallback");
+      runAnalysis().catch((err) => {
+        console.error("Background analysis error (IIFE fallback):", err);
+      });
+    }
 
     // Return success without URLs (they'll be generated on the detail page)
     return NextResponse.json(
@@ -237,10 +324,14 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Upload error:", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    
     return NextResponse.json(
       {
         error: "Internal server error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: errorMessage,
+        ...(process.env.NODE_ENV === "development" && { stack: errorStack }),
       },
       { status: 500 }
     );
