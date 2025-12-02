@@ -1,26 +1,350 @@
+@import url("https://fonts.googleapis.com/css2?family=Mona+Sans:ital,wght@0,200..900;1,200..900&display=swap");
 @import "tailwindcss";
+@import "tw-animate-css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Tailwind v4 - Configure dark mode to use class strategy */
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Mona Sans", ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* Light Theme Colors */
+  --color-dark-200: #475467;
+  --color-light-blue-100: #c1d3f81a;
+  --color-light-blue-200: #a7bff14d;
+
+  --color-badge-green: #d5faf1;
+  --color-badge-red: #f9e3e2;
+  --color-badge-yellow: #fceed8;
+
+  --color-badge-green-text: #254d4a;
+  --color-badge-red-text: #752522;
+  --color-badge-yellow-text: #73321b;
+
+  /* Light Theme Variables */
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #f8fafc;
+  --color-bg-tertiary: #f1f5f9;
+  --color-text-primary: #1e293b;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-border: #e2e8f0;
+  --color-border-light: #f1f5f9;
+  --color-shadow: rgba(0, 0, 0, 0.1);
+  --color-shadow-light: rgba(0, 0, 0, 0.05);
+
+  /* Dark Theme Variables - Enhanced Contrast */
+  --color-dark-bg-primary: #0f172a;
+  --color-dark-bg-secondary: #1e293b;
+  --color-dark-bg-tertiary: #334155;
+  --color-dark-text-primary: #ffffff;
+  --color-dark-text-secondary: #e2e8f0;
+  --color-dark-text-muted: #cbd5e1;
+  --color-dark-border: #475569;
+  --color-dark-border-light: #64748b;
+  --color-dark-shadow: rgba(0, 0, 0, 0.6);
+  --color-dark-shadow-light: rgba(0, 0, 0, 0.3);
+
+  /* Dark Theme Badge Colors */
+  --color-dark-badge-green: #1a3a35;
+  --color-dark-badge-red: #3d1a1a;
+  --color-dark-badge-yellow: #3d2a1a;
+
+  --color-dark-badge-green-text: #86efac;
+  --color-dark-badge-red-text: #fca5a5;
+  --color-dark-badge-yellow-text: #fcd34d;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Root theme application */
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+  color-scheme: light dark;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Ensure theme is applied to all background elements */
+* {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* Light mode defaults */
+html,
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Dark mode styles */
+html.dark,
+html.dark body {
+  background-color: var(--color-dark-bg-primary) !important;
+  color: var(--color-dark-text-primary) !important;
+}
+
+/* Light mode styles - must come after dark to override */
+html:not(.dark),
+html:not(.dark) body,
+html.light,
+html.light body {
+  background-color: var(--color-bg-primary) !important;
+  color: var(--color-text-primary) !important;
+}
+
+/* Theme-aware utilities */
+.bg-primary {
+  background-color: var(--color-bg-primary);
+}
+
+.dark .bg-primary {
+  background-color: var(--color-dark-bg-primary);
+}
+
+.bg-secondary {
+  background-color: var(--color-bg-secondary);
+}
+
+.dark .bg-secondary {
+  background-color: var(--color-dark-bg-secondary);
+}
+
+.text-primary {
+  color: var(--color-text-primary);
+}
+
+.dark .text-primary {
+  color: var(--color-dark-text-primary);
+}
+
+.text-secondary {
+  color: var(--color-text-secondary);
+}
+
+.dark .text-secondary {
+  color: var(--color-dark-text-secondary);
+}
+
+.border-theme {
+  border-color: var(--color-border);
+}
+
+.dark .border-theme {
+  border-color: var(--color-dark-border);
+}
+
+main {
+  transition: background 0.3s ease;
+}
+
+/* Light mode main background */
+html:not(.dark) main,
+html.light main {
+  background: linear-gradient(to bottom, #f0f4ff 60%, #fa7185cc) !important;
+}
+
+/* Dark mode main background */
+html.dark main {
+  background: linear-gradient(to bottom, #0f172a 60%, #4c1d95) !important;
+}
+
+h1 {
+  @apply max-sm:text-[3rem] text-6xl leading-tight xl:tracking-[-2px] font-semibold;
+}
+
+h2 {
+  @apply max-sm:text-xl text-3xl;
+  color: var(--color-text-secondary);
+  transition: color 0.3s ease;
+}
+
+html.dark h2 {
+  color: var(--color-dark-text-secondary);
+  text-shadow: 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+/* Enhanced contrast for all headings in dark mode */
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: var(--color-dark-text-primary) !important;
+  font-weight: 600;
+}
+
+label {
+  color: var(--color-text-secondary);
+  transition: color 0.3s ease;
+}
+
+html.dark label {
+  color: var(--color-dark-text-secondary);
+}
+
+input {
+  @apply w-full p-4 rounded-2xl focus:outline-none;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 12px 0 rgba(36, 99, 235, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+html.dark input {
+  background-color: var(--color-dark-bg-secondary);
+  color: var(--color-dark-text-primary);
+  border-color: var(--color-dark-border);
+  box-shadow: inset 0 0 12px 0 rgba(59, 130, 246, 0.3);
+}
+
+input:focus {
+  border-color: #8e98ff;
+  box-shadow: 0 0 0 3px rgba(142, 152, 255, 0.1);
+}
+
+textarea {
+  @apply w-full p-4 rounded-2xl focus:outline-none;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border: 1px solid var(--color-border);
+  transition: all 0.3s ease;
+  box-shadow: inset 0 0 12px 0 rgba(36, 99, 235, 0.2);
+  backdrop-filter: blur(10px);
+}
+
+html.dark textarea {
+  background-color: var(--color-dark-bg-secondary);
+  color: var(--color-dark-text-primary);
+  border-color: var(--color-dark-border);
+  box-shadow: inset 0 0 12px 0 rgba(59, 130, 246, 0.3);
+}
+
+textarea:focus {
+  border-color: #8e98ff;
+  box-shadow: 0 0 0 3px rgba(142, 152, 255, 0.1);
+}
+
+form {
+  @apply flex flex-col items-start gap-8 w-full;
+}
+
+@layer components {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-[#AB8C95] via-[#000000] to-[#8E97C5];
+  }
+
+  html.dark .text-gradient {
+    @apply bg-gradient-to-r from-[#f8c5d1] via-[#ffffff] to-[#c5d2ff];
+  }
+
+  .gradient-border {
+    @apply bg-gradient-to-b from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800 p-4 rounded-2xl;
+    transition: all 0.3s ease;
+  }
+
+  html.dark .gradient-border {
+    background: linear-gradient(to bottom, rgba(30, 41, 59, 0.6), rgba(51, 65, 85, 0.6));
+  }
+
+  .primary-button {
+    background: linear-gradient(to bottom, #8e98ff, #606beb);
+    @apply text-white rounded-full px-4 py-2 cursor-pointer w-full;
+    transition: all 0.3s ease;
+  }
+
+  .resume-summary {
+    @apply flex flex-row items-center justify-center p-4 gap-4;
+  }
+
+  .resume-summary .category {
+    @apply flex flex-row gap-2 items-center rounded-2xl p-4 w-full justify-between;
+    background-color: var(--color-bg-secondary);
+    transition: all 0.3s ease;
+  }
+
+  html.dark .resume-summary .category {
+    background-color: var(--color-dark-bg-secondary);
+  }
+
+  .score-badge {
+    @apply flex flex-row items-center justify-center py-1 px-2 gap-4 rounded-full;
+    transition: all 0.3s ease;
+  }
+
+  .form-div {
+    @apply flex flex-col gap-2 w-full items-start;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility bg-gradient {
+  background: linear-gradient(to bottom, #f0f4ff 60%, #fa7185cc);
+  transition: background 0.3s ease;
+}
+
+/* Light mode gradient */
+html:not(.dark) .bg-gradient,
+html.light .bg-gradient {
+  background: linear-gradient(to bottom, #f0f4ff 60%, #fa7185cc) !important;
+}
+
+/* Dark mode gradient */
+html.dark .bg-gradient {
+  background: linear-gradient(to bottom, #0f172a 60%, #4c1d95) !important;
+}
+
+@utility text-gradient {
+  @apply bg-clip-text text-transparent bg-gradient-to-r from-[#AB8C95] via-[#000000] to-[#8E97C5];
+}
+
+html.dark .text-gradient {
+  @apply bg-gradient-to-r from-[#d1b8c4] via-[#e2e8f0] to-[#b8c5f2];
+}
+
+@utility primary-gradient {
+  background: linear-gradient(to bottom, #8e98ff, #606beb);
+  box-shadow: 0px 74px 21px 0px #6678ef00;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Badge theme support */
+.score-badge.green {
+  background-color: var(--color-badge-green);
+  color: var(--color-badge-green-text);
+}
+
+html.dark .score-badge.green {
+  background-color: var(--color-dark-badge-green);
+  color: var(--color-dark-badge-green-text);
+}
+
+.score-badge.red {
+  background-color: var(--color-badge-red);
+  color: var(--color-badge-red-text);
+}
+
+html.dark .score-badge.red {
+  background-color: var(--color-dark-badge-red);
+  color: var(--color-dark-badge-red-text);
+}
+
+.score-badge.yellow {
+  background-color: var(--color-badge-yellow);
+  color: var(--color-badge-yellow-text);
+}
+
+html.dark .score-badge.yellow {
+  background-color: var(--color-dark-badge-yellow);
+  color: var(--color-dark-badge-yellow-text);
 }
