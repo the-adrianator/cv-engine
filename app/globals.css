@@ -62,9 +62,27 @@ html {
   color-scheme: light dark;
 }
 
-/* Ensure theme is applied to all background elements */
-* {
+/* 
+ * Performance-optimized transitions: Only apply to elements that need them
+ * Replaced universal selector (*) which was causing performance issues
+ */
+
+/* Reusable transition utility class for theme-aware elements */
+.with-transition {
   transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.3s;
+  transition-timing-function: ease;
+}
+
+/* Apply transitions to interactive elements that commonly need theme transitions */
+button,
+a,
+.card,
+[role="button"],
+[role="link"],
+[role="tab"],
+[role="menuitem"] {
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity;
   transition-duration: 0.3s;
   transition-timing-function: ease;
 }
