@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import CVCard from "@/components/cv/CVCard";
 import { getUserCVs, getOrCreateUser } from "@/lib/supabase/db";
-import { createServerClient } from "@/lib/supabase/server";
 
 // Mock data for testing components
 const mockResumes: Resume[] = [
