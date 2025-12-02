@@ -14,7 +14,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
                 CV Engine
               </span>
             </Link>
-            
+
             <div className="flex items-center gap-4">
               <Link
                 href="/upload"
@@ -22,7 +22,7 @@ export default function MainLayout({ children }: { children: ReactNode }) {
               >
                 Upload CV
               </Link>
-              <UserButton 
+              <UserButton
                 afterSignOutUrl="/auth/sign-in"
                 appearance={{
                   elements: {
@@ -40,4 +40,3 @@ export default function MainLayout({ children }: { children: ReactNode }) {
     </div>
   );
 }
-
