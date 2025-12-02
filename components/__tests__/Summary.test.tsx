@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import Summary from '@/components/cv/Summary';
+import type { Feedback } from '@/types';
 
 // Mock ScoreGauge and ScoreBadge
 jest.mock('@/components/cv/ScoreGauge', () => {
