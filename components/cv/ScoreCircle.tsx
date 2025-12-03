@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import { useThemeStore } from "@/lib/stores/theme";
 
-const ScoreCircle = ({ score = 75 }: { score: number }) => {
+const ScoreCircle = ({ score = 75 }: { score?: number }) => {
   const { theme } = useThemeStore();
   const radius = 40;
   const stroke = 8;
