@@ -1,17 +1,21 @@
-security: add server-side PDF validation using magic bytes
+refactor: improve Inngest function validation and retry strategy
 
-Add server-side content validation to verify uploaded files are actually
-PDFs by checking for PDF magic bytes. This prevents malicious files with
-spoofed MIME types from being uploaded.
+Enhance the CV analysis Inngest function with better input validation and
+optimized retry configuration to prevent unnecessary database writes while
+ensuring reliable external API calls.
 
 Changes:
-- Add PDF magic bytes validation ("%PDF") in upload route
-- Read first 8 bytes of file to check for PDF signature
-- Handle potential BOM or whitespace before PDF header
-- Add comment noting that client-provided MIME types can be spoofed
-- Update CVDetailView loading message text (British English spelling)
+- Add strict validation for imagePaths before processing
+- Validate firstImagePath is a non-empty string before use
+- Reduce function-level retries from 3 to 1 to avoid duplicate database writes
+- Increase step-level retries for analyze-cv step from 2 to 3 (for OpenAI API)
+- Add comments explaining retry strategy rationale
+- Fix missing zod import in JOB_QUEUE_IMPLEMENTATION.md example code
 
-The client-side MIME type check is kept as a first line of defense for
-user experience, but server-side validation ensures only actual PDF files
-are processed, preventing potential security issues from malicious file
-uploads.
+The new retry strategy ensures:
+- Database operations (writes) only happen once per function execution
+- External API calls (OpenAI, storage) are retried at the step level
+- Invalid inputs fail fast with clear error messages
+
+This prevents race conditions from function-level retries while maintaining
+reliability for external service calls.

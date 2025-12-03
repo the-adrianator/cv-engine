@@ -296,6 +296,7 @@ export const client = new TriggerClient({
 `app/api/trigger/route.ts`:
 
 ```typescript
+import { z } from "zod";
 import { TriggerClient } from "@trigger.dev/sdk";
 import { client } from "@/lib/trigger/client";
 

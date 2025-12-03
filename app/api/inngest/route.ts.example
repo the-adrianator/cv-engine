@@ -36,17 +36,28 @@ export const analyzeCVFunction = inngest.createFunction(
   { 
     id: "analyze-cv",
     name: "Analyze CV",
-    // Retry configuration
-    retries: 3,
+    // Reduced function-level retries to avoid re-running database writes
+    // Step-level retries handle external API calls (OpenAI, storage)
+    retries: 1,
   },
   { event: "cv/analyze" },
   async ({ event, step }) => {
     const { cvId, userId, imagePaths, jobTitle, jobDescription } = event.data;
 
-    // Step 1: Generate signed URL (with automatic retry)
+    // Step 1: Validate and generate signed URL (with automatic retry)
     const imageUrl = await step.run("generate-signed-url", async () => {
-      // Handle both string and array formats
+      // Strict validation: ensure imagePaths is valid before using
+      if (!imagePaths || (Array.isArray(imagePaths) && imagePaths.length === 0)) {
+        throw new Error("Missing or empty imagePaths");
+      }
+      
+      // Derive firstImagePath from validated value
       const firstImagePath = Array.isArray(imagePaths) ? imagePaths[0] : imagePaths;
+      
+      // Ensure we have a valid path before calling getSignedUrl
+      if (!firstImagePath || typeof firstImagePath !== "string" || firstImagePath.trim() === "") {
+        throw new Error("Invalid image path: path must be a non-empty string");
+      }
       
       const { url, error } = await getSignedUrl(firstImagePath, 3600);
       
@@ -71,6 +82,7 @@ export const analyzeCVFunction = inngest.createFunction(
     });
 
     // Step 4: Analyze CV (with retry and longer timeout)
+    // Step-level retries handle external API calls without re-running database writes
     const analysis = await step.run(
       "analyze-cv",
       async () => {
@@ -83,8 +95,8 @@ export const analyzeCVFunction = inngest.createFunction(
         return feedback;
       },
       {
-        // Retry configuration for this specific step
-        retries: 2, // Retry up to 2 times (3 total attempts)
+        // Retry configuration for this specific step (external API call)
+        retries: 3, // Retry up to 3 times (4 total attempts) for OpenAI API
         timeout: "5m", // 5 minutes timeout for OpenAI API
       }
     );
