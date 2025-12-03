@@ -1,13 +1,17 @@
-refactor: export types and use explicit imports
+feat: make feedback optional to support unanalyzed CVs
 
-Export type definitions from types/index.d.ts and import them explicitly
-instead of relying on global type declarations. This improves type safety
-and makes dependencies clearer.
+Make the feedback field optional in the Resume interface to support CVs
+that haven't been analyzed yet. This allows the UI to display CVs while
+analysis is in progress or if analysis fails.
 
 Changes:
-- Export Job, Resume, and Feedback interfaces from types/index.d.ts
-- Add explicit type imports in app/(main)/page.tsx
-- Replace implicit global type usage with explicit imports
+- Make feedback optional in Resume interface (feedback?: Feedback)
+- Update CVCard to handle missing feedback with nullish coalescing (?? 0)
+- Update CVDetailView to check for feedback existence before rendering
+- Add explicit type imports from @/types in components
+- Update test components page to conditionally render feedback-dependent components
+- Update tests to use imported types and handle optional feedback
+- Improve code formatting consistency in test files
 
-This ensures types are properly scoped and makes it easier to track
-type dependencies across the codebase.
+This enables a better user experience by showing CVs immediately after
+upload, even before OpenAI analysis completes.

@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import type { Feedback } from "@/types";
 import ScoreGauge from "./ScoreGauge";
 import ScoreBadge from "./ScoreBadge";
 
@@ -14,7 +15,9 @@ const Category = ({ title, score }: { title: string; score: number }) => {
     <div className="flex flex-row items-center justify-center p-4 gap-4">
       <div className="flex flex-row gap-2 items-center justify-between w-full rounded-2xl p-4 bg-gray-50 dark:bg-gray-800">
         <div className="flex flex-row gap-2 items-center justify-center">
-          <p className="text-2xl text-gray-900 dark:text-white font-semibold">{title}</p>
+          <p className="text-2xl text-gray-900 dark:text-white font-semibold">
+            {title}
+          </p>
           <ScoreBadge score={score} />
         </div>
         <p className="text-2xl font-bold">
@@ -33,7 +36,9 @@ const Summary = ({ feedback }: { feedback: Feedback }) => {
         <ScoreGauge score={feedback.overallScore} />
 
         <div className="flex flex-col gap-2">
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">Your CV Score</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Your CV Score
+          </h3>
           <p className="text-sm text-gray-600 dark:text-gray-400">
             This score is calculated based on the variables listed below.
           </p>
@@ -49,4 +54,3 @@ const Summary = ({ feedback }: { feedback: Feedback }) => {
 };
 
 export default Summary;
-

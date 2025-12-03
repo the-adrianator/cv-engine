@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import { useEffect } from "react";
+import type { Resume } from "@/types";
 import { useThemeStore } from "@/lib/stores/theme";
 import CVCard from "@/components/cv/CVCard";
 import FileUploader from "@/components/cv/FileUploader";
@@ -10,7 +11,10 @@ import Details from "@/components/cv/Details";
 import ScoreCircle from "@/components/cv/ScoreCircle";
 import ScoreGauge from "@/components/cv/ScoreGauge";
 import ScoreBadge from "@/components/cv/ScoreBadge";
-import { ThemeToggle, ThemeToggleCompact } from "@/components/layout/ThemeToggle";
+import {
+  ThemeToggle,
+  ThemeToggleCompact,
+} from "@/components/layout/ThemeToggle";
 
 // Mock data for testing
 const mockResume: Resume = {
@@ -32,29 +36,66 @@ const mockResume: Resume = {
     toneAndStyle: {
       score: 70,
       tips: [
-        { type: "good", tip: "Professional tone", explanation: "Your CV maintains a professional and confident tone throughout." },
-        { type: "improve", tip: "Vary sentence structure", explanation: "Consider using more varied sentence structures to improve readability." },
+        {
+          type: "good",
+          tip: "Professional tone",
+          explanation:
+            "Your CV maintains a professional and confident tone throughout.",
+        },
+        {
+          type: "improve",
+          tip: "Vary sentence structure",
+          explanation:
+            "Consider using more varied sentence structures to improve readability.",
+        },
       ],
     },
     content: {
       score: 75,
       tips: [
-        { type: "good", tip: "Clear achievements", explanation: "Your achievements are well-quantified and impactful." },
-        { type: "improve", tip: "Add more metrics", explanation: "Include more specific numbers and metrics to quantify your impact." },
+        {
+          type: "good",
+          tip: "Clear achievements",
+          explanation: "Your achievements are well-quantified and impactful.",
+        },
+        {
+          type: "improve",
+          tip: "Add more metrics",
+          explanation:
+            "Include more specific numbers and metrics to quantify your impact.",
+        },
       ],
     },
     structure: {
       score: 80,
       tips: [
-        { type: "good", tip: "Logical flow", explanation: "The structure follows a logical progression." },
-        { type: "improve", tip: "Section spacing", explanation: "Consider adjusting spacing between sections for better readability." },
+        {
+          type: "good",
+          tip: "Logical flow",
+          explanation: "The structure follows a logical progression.",
+        },
+        {
+          type: "improve",
+          tip: "Section spacing",
+          explanation:
+            "Consider adjusting spacing between sections for better readability.",
+        },
       ],
     },
     skills: {
       score: 70,
       tips: [
-        { type: "good", tip: "Relevant skills", explanation: "Your skills are relevant to the role." },
-        { type: "improve", tip: "Add certifications", explanation: "Consider adding relevant certifications to strengthen your profile." },
+        {
+          type: "good",
+          tip: "Relevant skills",
+          explanation: "Your skills are relevant to the role.",
+        },
+        {
+          type: "improve",
+          tip: "Add certifications",
+          explanation:
+            "Consider adding relevant certifications to strengthen your profile.",
+        },
       ],
     },
   },
@@ -86,11 +127,15 @@ export default function TestComponentsPage() {
           </h2>
           <div className="flex gap-8 justify-center">
             <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Full Toggle</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Full Toggle
+              </p>
               <ThemeToggle />
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Compact Toggle</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                Compact Toggle
+              </p>
               <ThemeToggleCompact />
             </div>
           </div>
@@ -103,15 +148,21 @@ export default function TestComponentsPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Score Circle</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Score Circle
+              </p>
               <ScoreCircle score={85} />
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Score Gauge</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Score Gauge
+              </p>
               <ScoreGauge score={75} />
             </div>
             <div className="text-center">
-              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Score Badge</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                Score Badge
+              </p>
               <div className="flex flex-col gap-4 items-center">
                 <ScoreBadge score={85} />
                 <ScoreBadge score={65} />
@@ -126,7 +177,9 @@ export default function TestComponentsPage() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             File Uploader
           </h2>
-          <FileUploader onFileSelect={(file) => console.log('Selected file:', file?.name)} />
+          <FileUploader
+            onFileSelect={(file) => console.log("Selected file:", file?.name)}
+          />
         </div>
 
         {/* CV Card */}
@@ -144,7 +197,7 @@ export default function TestComponentsPage() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             Summary Component
           </h2>
-          <Summary feedback={mockResume.feedback} />
+          {mockResume.feedback && <Summary feedback={mockResume.feedback} />}
         </div>
 
         {/* ATS Component */}
@@ -152,10 +205,12 @@ export default function TestComponentsPage() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             ATS Component
           </h2>
-          <ATS
-            score={mockResume.feedback.ATS.score}
-            suggestions={mockResume.feedback.ATS.tips}
-          />
+          {mockResume.feedback && (
+            <ATS
+              score={mockResume.feedback.ATS.score}
+              suggestions={mockResume.feedback.ATS.tips}
+            />
+          )}
         </div>
 
         {/* Details Component */}
@@ -163,10 +218,9 @@ export default function TestComponentsPage() {
           <h2 className="text-2xl font-semibold text-gray-900 dark:text-white mb-6">
             Details Component (Accordion)
           </h2>
-          <Details feedback={mockResume.feedback} />
+          {mockResume.feedback && <Details feedback={mockResume.feedback} />}
         </div>
       </div>
     </main>
   );
 }
-

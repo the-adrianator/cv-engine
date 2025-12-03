@@ -1,18 +1,19 @@
-'use client';
+"use client";
 
 import Link from "next/link";
+import type { Resume } from "@/types";
 import ScoreCircle from "./ScoreCircle";
 
 interface CVCardProps {
   resume: Resume;
 }
 
-const CVCard = ({ resume: { id, companyName, jobTitle, feedback, imagePath } }: CVCardProps) => {
+const CVCard = ({
+  resume: { id, companyName, jobTitle, feedback, imagePath },
+}: CVCardProps) => {
   // For now, we'll use the imagePath directly
   // Later, we'll fetch from Supabase Storage
-  const imageUrl = imagePath.startsWith("/images/") 
-    ? imagePath 
-    : imagePath; // Will be Supabase URL later
+  const imageUrl = imagePath.startsWith("/images/") ? imagePath : imagePath; // Will be Supabase URL later
 
   return (
     <Link
@@ -27,14 +28,18 @@ const CVCard = ({ resume: { id, companyName, jobTitle, feedback, imagePath } }: 
             </h2>
           )}
           {jobTitle && (
-            <h3 className="text-lg break-words text-gray-600 dark:text-gray-400">{jobTitle}</h3>
+            <h3 className="text-lg break-words text-gray-600 dark:text-gray-400">
+              {jobTitle}
+            </h3>
           )}
           {!companyName && !jobTitle && (
-            <h3 className="text-lg break-words text-gray-600 dark:text-gray-400">CV</h3>
+            <h3 className="text-lg break-words text-gray-600 dark:text-gray-400">
+              CV
+            </h3>
           )}
         </div>
         <div className="flex-shrink-0">
-          <ScoreCircle score={feedback.overallScore} />
+          <ScoreCircle score={feedback?.overallScore ?? 0} />
         </div>
       </div>
       <div className="border-2 border-gray-200 dark:border-gray-700 rounded-2xl p-4 bg-gradient-to-b from-blue-50 to-purple-50 dark:from-gray-700 dark:to-gray-800">
@@ -55,4 +60,3 @@ const CVCard = ({ resume: { id, companyName, jobTitle, feedback, imagePath } }: 
 };
 
 export default CVCard;
-

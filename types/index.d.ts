@@ -12,7 +12,7 @@ export interface Resume {
   imagePath: string;
   imagePaths?: string[]; // For multi-page support
   resumePath: string;
-  feedback: Feedback;
+  feedback?: Feedback; // Optional for un-analyzed CVs
 }
 
 export interface Feedback {

@@ -1,5 +1,6 @@
 "use client";
 
+import type { Feedback } from "@/types";
 import { cn } from "@/lib/utils";
 import {
   Accordion,

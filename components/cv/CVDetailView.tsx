@@ -39,7 +39,7 @@ interface Resume {
   imagePath: string;
   imagePaths?: string[]; // For multi-page support
   resumePath: string;
-  feedback: Feedback;
+  feedback?: Feedback; // Optional for un-analyzed CVs
 }
 
 interface CVDetailViewProps {
@@ -53,20 +53,21 @@ export default function CVDetailView({
   const [resume, setResume] = useState(initialResume);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
-  
+
   // Get all image paths (use imagePaths if available, otherwise fallback to single imagePath)
-  const imagePaths = resume.imagePaths && resume.imagePaths.length > 0
-    ? resume.imagePaths
-    : resume.imagePath
-    ? [resume.imagePath]
-    : [];
-  
+  const imagePaths =
+    resume.imagePaths && resume.imagePaths.length > 0
+      ? resume.imagePaths
+      : resume.imagePath
+      ? [resume.imagePath]
+      : [];
+
   const totalPages = imagePaths.length;
   const currentImagePath = imagePaths[currentPage] || "";
 
   // Auto-refresh if analysis is not complete
   useEffect(() => {
-    if (resume.feedback.overallScore === 0) {
+    if (!resume.feedback || resume.feedback.overallScore === 0) {
       const interval = setInterval(async () => {
         try {
           const response = await fetch(`/api/cvs/${resume.id}`);
@@ -92,7 +93,7 @@ export default function CVDetailView({
 
       return () => clearInterval(interval);
     }
-  }, [resume.id, resume.feedback.overallScore]);
+  }, [resume.id, resume.feedback?.overallScore]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -138,14 +139,17 @@ export default function CVDetailView({
           {/* CV Image */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 border border-gray-200 dark:border-gray-700 mb-8 h-fit">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-              Your CV {totalPages > 1 && `(Page ${currentPage + 1} of ${totalPages})`}
+              Your CV{" "}
+              {totalPages > 1 && `(Page ${currentPage + 1} of ${totalPages})`}
             </h2>
             <div className="relative">
               {/* Navigation arrows */}
               {totalPages > 1 && (
                 <>
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.max(0, prev - 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(0, prev - 1))
+                    }
                     disabled={currentPage === 0}
                     className="absolute left-2 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-700 rounded-full p-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     aria-label="Previous page"
@@ -165,7 +169,11 @@ export default function CVDetailView({
                     </svg>
                   </button>
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.min(totalPages - 1, prev + 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(totalPages - 1, prev + 1)
+                      )
+                    }
                     disabled={currentPage === totalPages - 1}
                     className="absolute right-2 top-1/2 -translate-y-1/2 z-10 bg-white dark:bg-gray-700 rounded-full p-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     aria-label="Next page"
@@ -186,7 +194,7 @@ export default function CVDetailView({
                   </button>
                 </>
               )}
-              
+
               <div className="flex justify-center">
                 {currentImagePath ? (
                   <img
@@ -217,7 +225,7 @@ export default function CVDetailView({
                   </div>
                 )}
               </div>
-              
+
               {/* Page indicators */}
               {totalPages > 1 && (
                 <div className="flex justify-center gap-2 mt-4">
@@ -264,7 +272,7 @@ export default function CVDetailView({
           </div>
 
           {/* Analysis Results */}
-          {resume.feedback.overallScore > 0 ? (
+          {resume.feedback && resume.feedback.overallScore > 0 ? (
             <div className="space-y-8">
               <Summary feedback={resume.feedback} />
               <ATS
