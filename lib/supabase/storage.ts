@@ -5,7 +5,7 @@
  */
 
 import { createAdminClient } from "./server";
-import { supabase } from "./client";
+import { getSupabaseClient } from "./client";
 
 const BUCKET_NAME = "cvs";
 
@@ -18,6 +18,7 @@ export async function uploadFile(
   userId: string
 ): Promise<{ path: string; error: Error | null }> {
   try {
+    const supabase = getSupabaseClient();
     const filePath = `${userId}/${path}`;
 
     const { error } = await supabase.storage
@@ -44,8 +45,15 @@ export async function uploadFile(
  * Get a public URL for a file (client-side)
  */
 export function getPublicUrl(path: string): string {
-  const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
-  return data.publicUrl;
+  try {
+    const supabase = getSupabaseClient();
+    const { data } = supabase.storage.from(BUCKET_NAME).getPublicUrl(path);
+    return data.publicUrl;
+  } catch (error) {
+    // If Supabase is not configured, return empty string or placeholder
+    console.error("Failed to get public URL - Supabase not configured:", error);
+    return "";
+  }
 }
 
 /**

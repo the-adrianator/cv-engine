@@ -1,15 +1,18 @@
-refactor: simplify getOrCreateUsageTracking with upsert pattern
+refactor: implement lazy Supabase client initialization
 
-Replace the read-then-insert pattern with a single upsert operation to
-simplify the code and reduce potential race conditions when creating
-usage tracking records.
+Replace eager client initialization with lazy initialization to prevent
+app crashes at module load time when Supabase environment variables are
+missing. This improves developer experience and provides better error
+messages.
 
 Changes:
-- Use upsert with onConflict to atomically ensure usage_tracking row exists
-- Remove separate read and insert operations
-- Simplify error handling by using a single upsert followed by select
-- Rely on database defaults for initial values (scans_this_month, total_scans, last_reset_date)
+- Add getSupabaseClient() function with lazy initialization
+- Check environment variables at call-time instead of module load
+- Provide detailed error messages listing missing environment variables
+- Include setup instructions in error messages
+- Add Proxy-based backward compatibility for existing supabase export
+- Update storage.ts to use getSupabaseClient() instead of direct export
+- Add error handling in getPublicUrl() to gracefully handle missing config
 
-This reduces code complexity and makes the function more atomic, though
-the increment_scan_count RPC function already handles row creation, so
-this is primarily a code simplification improvement.
+This allows the app to start even if Supabase isn't configured, and
+provides clearer guidance when configuration is needed.
