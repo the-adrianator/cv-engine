@@ -6,41 +6,7 @@ import { useRouter } from "next/navigation";
 import Summary from "@/components/cv/Summary";
 import ATS from "@/components/cv/ATS";
 import Details from "@/components/cv/Details";
-
-// Define types locally to avoid import issues
-interface Feedback {
-  overallScore: number;
-  ATS: {
-    score: number;
-    tips: { type: "good" | "improve"; tip: string }[];
-  };
-  toneAndStyle: {
-    score: number;
-    tips: { type: "good" | "improve"; tip: string; explanation: string }[];
-  };
-  content: {
-    score: number;
-    tips: { type: "good" | "improve"; tip: string; explanation: string }[];
-  };
-  structure: {
-    score: number;
-    tips: { type: "good" | "improve"; tip: string; explanation: string }[];
-  };
-  skills: {
-    score: number;
-    tips: { type: "good" | "improve"; tip: string; explanation: string }[];
-  };
-}
-
-interface Resume {
-  id: string;
-  companyName?: string;
-  jobTitle?: string;
-  imagePath: string;
-  imagePaths?: string[]; // For multi-page support
-  resumePath: string;
-  feedback?: Feedback; // Optional for un-analyzed CVs
-}
+import type { Feedback, Resume } from "@/types";
 
 interface CVDetailViewProps {
   resume: Resume;
