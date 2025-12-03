@@ -181,7 +181,7 @@ export async function analyzeCV(
     }
 
     // Validate feedback structure
-    if (!feedback.overallScore || !feedback.ATS || !feedback.toneAndStyle) {
+    if (typeof feedback.overallScore !== 'number' || !feedback.ATS || !feedback.toneAndStyle) {
       console.error('Invalid feedback structure:', {
         hasOverallScore: !!feedback.overallScore,
         hasATS: !!feedback.ATS,
