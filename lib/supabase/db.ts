@@ -4,7 +4,7 @@
  * Type-safe database operations for CV Engine
  */
 
-import { createServerClient } from "./server";
+import { createServerClient, createAdminClient } from "./server";
 import type { Database } from "@/types/database";
 
 type CV = Database["public"]["Tables"]["cvs"]["Row"];
@@ -262,44 +262,35 @@ export async function getOrCreateUsageTracking(
 }
 
 /**
- * Increment scan count for a user
+ * Increment scan count for a user (atomic operation)
+ * 
+ * Uses a database RPC function to perform atomic increment, preventing
+ * race conditions when multiple requests increment simultaneously.
+ * The function also handles monthly reset logic and creates the row
+ * if it doesn't exist.
  */
 export async function incrementScanCount(
   userId: string
 ): Promise<{ usage: UsageTracking | null; error: Error | null }> {
   try {
-    const supabase = createServerClient();
+    // Use admin client for RPC mutation to ensure proper permissions
+    const supabase = createAdminClient();
 
-    // Get current usage
-    const { usage, error: fetchError } = await getOrCreateUsageTracking(userId);
-    if (fetchError || !usage) {
-      return { usage: null, error: fetchError || new Error("Usage not found") };
-    }
-
-    // Check if we need to reset monthly count
-    const today = new Date();
-    const lastReset = new Date(usage.last_reset_date);
-    const needsReset =
-      today.getMonth() !== lastReset.getMonth() ||
-      today.getFullYear() !== lastReset.getFullYear();
-
-    const updates: UsageTrackingUpdate = {
-      scans_this_month: needsReset ? 1 : usage.scans_this_month + 1,
-      total_scans: usage.total_scans + 1,
-      last_reset_date: needsReset
-        ? today.toISOString().split("T")[0]
-        : usage.last_reset_date,
-    };
-
-    const { data, error } = await supabase
-      .from("usage_tracking")
-      .update(updates)
-      .eq("user_id", userId)
-      .select()
-      .single();
+    // Call the atomic RPC function
+    // This performs: INSERT ON CONFLICT + atomic UPDATE in a single transaction
+    const { data, error } = await supabase.rpc("increment_scan_count", {
+      p_user_id: userId,
+    });
 
     if (error) {
       return { usage: null, error };
+    }
+
+    if (!data) {
+      return {
+        usage: null,
+        error: new Error("Failed to increment scan count: no data returned"),
+      };
     }
 
     return { usage: data, error: null };

@@ -86,18 +86,31 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
 #### Row Level Security (RLS)
 
-The schema **disables RLS** because we're using Clerk for authentication (not Supabase Auth). RLS policies that use `auth.uid()` won't work with Clerk.
+> **Important:** In production environments, **RLS must remain enabled**.  
+> Disabling RLS should only ever be used as a **temporary local debugging step**.
 
-**Security is handled in application code:**
+The starter schema currently **disables RLS** because we're using Clerk for authentication (not Supabase Auth) and RLS policies that use `auth.uid()` won't work out-of-the-box with Clerk.
+
+For now, we use a **stopgap** approach where security is enforced in application code:
 - All database functions in `lib/supabase/db.ts` check `user_id` in queries
-- Users can only access their own data (enforced in WHERE clauses)
-- Server-side operations use service role key for privileged access
-- Client-side operations are limited to what the server exposes via API routes
+- Users can only access their own data (enforced in `WHERE` clauses)
+- Server-side operations use the service role key for privileged access
+- Client-side code only talks to the database via server components / API routes
 
-This approach is secure because:
-1. All database operations go through server-side functions
-2. User ID is verified from Clerk session before queries
-3. No direct client access to database (only via API routes)
+This is acceptable for **local development and short-term prototypes**, but it carries explicit risks if used in production:
+1. **Accidental service-role leakage** (misusing the service key outside trusted server code)
+2. **Server-side bugs** that forget to check `user_id` correctly
+3. **Bypassable isolation** if any new code path skips the helper functions
+
+For production you should prefer **RLS + Clerk-aware JWT integration**, for example by:
+- Issuing Supabase JWTs from your server using the Clerk user ID as the subject
+- Using policies that check a custom claim (e.g. `user_id = current_setting('request.jwt.claims.user_id')`)
+- Following Supabase’s “external auth / custom JWT” docs or Clerk’s Supabase integration guides
+
+If you temporarily disable RLS for local debugging:
+- Do it **only** in a non-production project
+- Keep using the app-level `user_id` checks
+- Plan to re-enable RLS and move to a JWT-based policy model before going live
 
 #### Storage Policies
 
@@ -134,7 +147,8 @@ Since Clerk handles authentication, Supabase storage policies won't work with `a
 - **Solution:** Make sure all three Supabase env vars are set in `.env.local`
 
 **Issue:** RLS policies blocking queries
-- **Solution:** For now, we can disable RLS or handle it in application code (we're doing the latter)
+- **Solution (development only):** You may temporarily relax or disable a policy to debug, but restore RLS afterwards.
+- **Solution (production):** Keep RLS enabled and update policies to use Clerk-aware JWT claims instead of `auth.uid()`. The app-level `user_id` checks are a safety net, not a replacement for RLS.
 
 **Issue:** Storage upload fails
 - **Solution:** Check bucket name matches `BUCKET_NAME` in `lib/supabase/storage.ts` (should be "cvs")

@@ -32,12 +32,19 @@ npm run test:coverage
 
 ### Test Structure
 
-Tests are located in `components/__tests__/` directory:
-- `ThemeToggle.test.tsx` - Theme toggle component tests
-- `ScoreBadge.test.tsx` - Score badge component tests
-- `FileUploader.test.tsx` - File uploader component tests
-- `CVCard.test.tsx` - CV card component tests
-- `Summary.test.tsx` - Summary component tests
+Tests are organised by feature and can be found in several directories:
+
+- `components/__tests__/` – UI component tests  
+  - `ThemeToggle.test.tsx` - Theme toggle component tests  
+  - `ScoreBadge.test.tsx` - Score badge component tests  
+  - `FileUploader.test.tsx` - File uploader component tests  
+  - `CVCard.test.tsx` - CV card component tests  
+  - `Summary.test.tsx` - Summary component tests  
+
+- `app/(main)/__tests__/` – **page and layout tests** for main app routes  
+- `app/api/__tests__/` – **API route tests** (e.g. CV upload/analysis endpoints)  
+
+Additional test directories may be added in the future following this pattern.
 
 ### Mocks Configured
 

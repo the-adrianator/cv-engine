@@ -4,7 +4,7 @@
  * Helper functions for file uploads and storage operations
  */
 
-import { createServerClient } from "./server";
+import { createAdminClient } from "./server";
 import { supabase } from "./client";
 
 const BUCKET_NAME = "cvs";
@@ -59,7 +59,6 @@ export async function getSignedUrl(
 ): Promise<{ url: string | null; error: Error | null }> {
   try {
     // Use admin client to generate signed URLs for private buckets
-    const { createAdminClient } = await import("./server");
     const supabase = createAdminClient();
 
     const { data, error } = await supabase.storage
@@ -86,7 +85,7 @@ export async function deleteFile(
   path: string
 ): Promise<{ success: boolean; error: Error | null }> {
   try {
-    const supabase = createServerClient();
+    const supabase = createAdminClient();
 
     const { error } = await supabase.storage
       .from(BUCKET_NAME)
