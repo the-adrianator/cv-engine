@@ -1,13 +1,16 @@
-fix: correct error message extraction in CV upload analysis
+fix: use admin client for storage uploads and improve UI
 
-Fix error message handling when OpenAI analysis fails. The error may be
-a string rather than an Error object, so use it directly instead of
-accessing the message property.
+Fix uploadFile to use createAdminClient() instead of getSupabaseClient()
+to ensure proper permissions for storage bucket uploads. Storage buckets
+with RLS require the service role key for uploads.
 
 Changes:
-- Use analysisError directly instead of analysisError?.message
-- Move console.error after errorMessage is set for consistency
-- Ensure error message is properly stored in database when analysis fails
+- Switch uploadFile to use createAdminClient() for storage operations
+- Add security warning comment about server-side only usage
+- Clarify that client-side uploads should use /api/cvs/upload endpoint
+- Remove duplicate imports in CV detail API route
+- Fix British English spelling: "Analyzing" → "Analysing"
+- Add h-fit class to analysis loading state container for better layout
 
-This ensures that analysis errors are correctly captured and stored,
-regardless of whether the error is a string or Error object.
+This ensures uploadFile has the correct permissions and prevents
+potential permission errors when uploading files to private storage buckets.

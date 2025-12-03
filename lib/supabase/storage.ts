@@ -5,12 +5,18 @@
  */
 
 import { createAdminClient } from "./server";
-import { getSupabaseClient } from "./client";
+import { getSupabaseClient } from "./client"; // Only used for getPublicUrl
 
 const BUCKET_NAME = "cvs";
 
 /**
- * Upload a file to Supabase Storage (client-side)
+ * Upload a file to Supabase Storage (server-side only)
+ * 
+ * ⚠️ IMPORTANT: This function uses the service role key (admin client) and
+ * must ONLY be called from server-side code (API routes, server actions, etc.).
+ * Never call this from client-side code as it would expose the service role key.
+ * 
+ * For client-side uploads, use the /api/cvs/upload endpoint instead.
  */
 export async function uploadFile(
   file: File | Blob,
@@ -18,7 +24,9 @@ export async function uploadFile(
   userId: string
 ): Promise<{ path: string; error: Error | null }> {
   try {
-    const supabase = getSupabaseClient();
+    // Use admin client for storage uploads to bypass RLS
+    // Storage buckets with RLS require service role key for uploads
+    const supabase = createAdminClient();
     const filePath = `${userId}/${path}`;
 
     const { error } = await supabase.storage

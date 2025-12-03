@@ -282,7 +282,7 @@ export default function CVDetailView({
               <Details feedback={resume.feedback} />
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 border border-gray-200 dark:border-gray-700 h-fit">
               <div className="text-center py-12">
                 <div className="inline-block p-4 bg-blue-100 dark:bg-blue-900/20 rounded-full mb-4">
                   <svg
@@ -306,7 +306,7 @@ export default function CVDetailView({
                   </svg>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-                  Analyzing Your CV
+                  Analysing Your CV
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
                   Your CV is being analyzed by our AI. This usually takes 10-30

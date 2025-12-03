@@ -1,9 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { getCV } from "@/lib/supabase/db";
-import { auth } from "@clerk/nextjs/server";
-import { NextRequest, NextResponse } from "next/server";
-import { getCV } from "@/lib/supabase/db";
 
 export async function GET(
   request: NextRequest,
