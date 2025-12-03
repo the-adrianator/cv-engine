@@ -8,7 +8,11 @@ import { auth } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 import { updateCV } from "@/lib/supabase/db";
-import { analyzeCV, prepareInstructions } from "@/lib/openai/analyze";
+import {
+  analyzeCV,
+  prepareInstructions,
+  sanitizeJobInputs,
+} from "@/lib/openai/analyze";
 import type { Json } from "@/types/database";
 
 export const maxDuration = 60; // 60 seconds max
@@ -79,8 +83,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare analysis instructions
-    const instructions = prepareInstructions({ jobTitle, jobDescription });
+    // Sanitize user-provided job context before including in prompts
+    const { jobTitle: safeJobTitle, jobDescription: safeJobDescription } =
+      sanitizeJobInputs({ jobTitle, jobDescription });
+
+    // Prepare analysis instructions with sanitized inputs
+    const instructions = prepareInstructions({
+      jobTitle: safeJobTitle,
+      jobDescription: safeJobDescription,
+    });
     
     console.log('Calling OpenAI with image URL:', finalImageUrl.substring(0, 100) + '...');
 

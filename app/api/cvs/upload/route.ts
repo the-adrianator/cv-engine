@@ -201,7 +201,11 @@ export async function POST(request: NextRequest) {
         console.log('Starting background CV analysis:', cv.id);
         
         // Import analysis dependencies
-        const { analyzeCV, prepareInstructions } = await import("@/lib/openai/analyze");
+        const {
+          analyzeCV,
+          prepareInstructions,
+          sanitizeJobInputs,
+        } = await import("@/lib/openai/analyze");
         const { updateCV } = await import("@/lib/supabase/db");
         const { getSignedUrl } = await import("@/lib/supabase/storage");
         
@@ -233,8 +237,17 @@ export async function POST(request: NextRequest) {
           return;
         }
         
-        // Prepare instructions
-        const instructions = prepareInstructions({ jobTitle, jobDescription });
+        // Sanitize user-provided job context before including in prompts
+        const {
+          jobTitle: safeJobTitle,
+          jobDescription: safeJobDescription,
+        } = sanitizeJobInputs({ jobTitle, jobDescription });
+
+        // Prepare instructions with sanitized inputs
+        const instructions = prepareInstructions({
+          jobTitle: safeJobTitle,
+          jobDescription: safeJobDescription,
+        });
         
         // Analyze CV
         console.log('Calling OpenAI for CV analysis...');
