@@ -1,17 +1,21 @@
-feat: integrate Clerk authentication with protected routes and auth pages
+refactor: improve Inngest function validation and retry strategy
 
-- Add @clerk/nextjs dependency and configure ClerkProvider in root layout
-- Implement middleware with route protection for upload, cv, settings, and API routes
-- Add public route matcher to allow unauthenticated access to auth pages
-- Create sign-in and sign-up pages using Clerk components with catch-all routes
-- Add main application layout with navbar, UserButton, and navigation
-- Implement home page with authentication check and redirect logic
-- Add authentication utility functions (getAuthUser, requireAuth, getUserId, isAuthenticated)
-- Update app metadata with CV Engine branding
-- Add environment variable template (.env.local.example)
-- Add comprehensive documentation (ARCHITECTURE.md, CLERK_MIGRATION.md, MIGRATION_GUIDE.md, SETUP.md)
-- Refactor route structure: move root page to (main) group, remove old auth pages
+Enhance the CV analysis Inngest function with better input validation and
+optimized retry configuration to prevent unnecessary database writes while
+ensuring reliable external API calls.
 
-This commit establishes the authentication foundation for the CV Engine application,
-enabling user sign-up, sign-in, and protected route access.
+Changes:
+- Add strict validation for imagePaths before processing
+- Validate firstImagePath is a non-empty string before use
+- Reduce function-level retries from 3 to 1 to avoid duplicate database writes
+- Increase step-level retries for analyze-cv step from 2 to 3 (for OpenAI API)
+- Add comments explaining retry strategy rationale
+- Fix missing zod import in JOB_QUEUE_IMPLEMENTATION.md example code
 
+The new retry strategy ensures:
+- Database operations (writes) only happen once per function execution
+- External API calls (OpenAI, storage) are retried at the step level
+- Invalid inputs fail fast with clear error messages
+
+This prevents race conditions from function-level retries while maintaining
+reliability for external service calls.

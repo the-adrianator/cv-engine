@@ -1,0 +1,16 @@
+/**
+ * Inngest Client Configuration
+ * 
+ * Copy this file to lib/inngest/client.ts and configure with your Inngest credentials
+ */
+
+import { Inngest } from "inngest";
+
+// Create a client to send and receive events
+export const inngest = new Inngest({ 
+  id: "cv-engine",
+  // In development, this will use the Inngest Dev Server (localhost:8288)
+  // In production, this will use your Inngest account
+  // No API keys needed - Inngest uses webhooks for communication
+});
+

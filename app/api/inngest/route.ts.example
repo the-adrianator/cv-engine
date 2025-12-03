@@ -1,0 +1,147 @@
+/**
+ * Inngest API Route Handler
+ * 
+ * This file handles incoming events from Inngest and processes CV analysis jobs.
+ * 
+ * Copy this to app/api/inngest/route.ts
+ * 
+ * Setup:
+ * 1. Install: npm install inngest
+ * 2. Create lib/inngest/client.ts (see example)
+ * 3. Run Inngest Dev Server: npx inngest-cli dev
+ * 4. Deploy and configure webhook in Inngest dashboard
+ */
+
+import { serve } from "inngest/next";
+import { inngest } from "@/lib/inngest/client";
+import { analyzeCV, prepareInstructions, sanitizeJobInputs } from "@/lib/openai/analyze";
+import { updateCV } from "@/lib/supabase/db";
+import { getSignedUrl } from "@/lib/supabase/storage";
+import type { Json } from "@/types/database";
+
+// Event schema for type safety
+type AnalyzeCVEvent = {
+  name: "cv/analyze";
+  data: {
+    cvId: string;
+    userId: string;
+    imagePaths: string | string[]; // Support both single path and array
+    jobTitle: string;
+    jobDescription: string;
+  };
+};
+
+// Define the function that will process CV analysis
+export const analyzeCVFunction = inngest.createFunction(
+  { 
+    id: "analyze-cv",
+    name: "Analyze CV",
+    // Reduced function-level retries to avoid re-running database writes
+    // Step-level retries handle external API calls (OpenAI, storage)
+    retries: 1,
+  },
+  { event: "cv/analyze" },
+  async ({ event, step }) => {
+    const { cvId, userId, imagePaths, jobTitle, jobDescription } = event.data;
+
+    // Step 1: Validate and generate signed URL (with automatic retry)
+    const imageUrl = await step.run("generate-signed-url", async () => {
+      // Strict validation: ensure imagePaths is valid before using
+      if (!imagePaths || (Array.isArray(imagePaths) && imagePaths.length === 0)) {
+        throw new Error("Missing or empty imagePaths");
+      }
+      
+      // Derive firstImagePath from validated value
+      const firstImagePath = Array.isArray(imagePaths) ? imagePaths[0] : imagePaths;
+      
+      // Ensure we have a valid path before calling getSignedUrl
+      if (!firstImagePath || typeof firstImagePath !== "string" || firstImagePath.trim() === "") {
+        throw new Error("Invalid image path: path must be a non-empty string");
+      }
+      
+      const { url, error } = await getSignedUrl(firstImagePath, 3600);
+      
+      if (error || !url) {
+        throw new Error(error?.message || "Failed to generate signed URL");
+      }
+      
+      return url;
+    });
+
+    // Step 2: Sanitize inputs (with automatic retry)
+    const sanitized = await step.run("sanitize-inputs", async () => {
+      return sanitizeJobInputs({ jobTitle, jobDescription });
+    });
+
+    // Step 3: Prepare instructions (with automatic retry)
+    const instructions = await step.run("prepare-instructions", async () => {
+      return prepareInstructions({
+        jobTitle: sanitized.jobTitle,
+        jobDescription: sanitized.jobDescription,
+      });
+    });
+
+    // Step 4: Analyze CV (with retry and longer timeout)
+    // Step-level retries handle external API calls without re-running database writes
+    const analysis = await step.run(
+      "analyze-cv",
+      async () => {
+        const { feedback, error } = await analyzeCV(imageUrl, instructions);
+        
+        if (error || !feedback) {
+          throw new Error(error?.message || "Analysis failed");
+        }
+        
+        return feedback;
+      },
+      {
+        // Retry configuration for this specific step (external API call)
+        retries: 3, // Retry up to 3 times (4 total attempts) for OpenAI API
+        timeout: "5m", // 5 minutes timeout for OpenAI API
+      }
+    );
+
+    // Step 5: Update database (with automatic retry)
+    await step.run("save-feedback", async () => {
+      const feedbackJson = JSON.parse(JSON.stringify(analysis)) as Json;
+      const { error: updateError } = await updateCV(cvId, userId, {
+        feedback: feedbackJson,
+        analysis_status: "succeeded",
+        analysis_error: null,
+      });
+
+      if (updateError) {
+        throw new Error(updateError.message || "Failed to save feedback");
+      }
+    });
+
+    return { success: true, cvId };
+  }
+);
+
+// Function to handle analysis failures (optional but recommended)
+export const handleAnalysisFailure = inngest.createFunction(
+  { 
+    id: "handle-analysis-failure",
+    name: "Handle Analysis Failure",
+  },
+  { event: "cv/analyze.failed" },
+  async ({ event, step }) => {
+    const { cvId, userId, error } = event.data;
+
+    await step.run("update-failed-status", async () => {
+      await updateCV(cvId, userId, {
+        analysis_status: "failed",
+        analysis_error: error?.message || "Analysis failed",
+      });
+    });
+  }
+);
+
+// Export the serve handler - this creates the API route
+// Inngest will send events to this endpoint
+export const { GET, POST, PUT } = serve({
+  client: inngest,
+  functions: [analyzeCVFunction, handleAnalysisFailure],
+});
+
