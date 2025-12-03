@@ -68,8 +68,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate file type
+    // Validate file type (client-provided, can be spoofed)
     if (file.type !== "application/pdf") {
+      return NextResponse.json(
+        { error: "File must be a PDF" },
+        { status: 400 }
+      );
+    }
+
+    // Server-side content validation: verify PDF magic bytes
+    // This prevents malicious files with spoofed MIME types
+    // PDF files start with "%PDF-" (5 bytes) or may have whitespace/BOM before it
+    const fileBuffer = await file.arrayBuffer();
+    // Read first 8 bytes to account for potential BOM or whitespace
+    const headerBytes = new Uint8Array(fileBuffer.slice(0, 8));
+    const headerString = new TextDecoder('ascii', { fatal: false }).decode(headerBytes);
+    
+    // Check if the header contains "%PDF" (standard PDF magic bytes)
+    if (!headerString.includes("%PDF")) {
       return NextResponse.json(
         { error: "File must be a PDF" },
         { status: 400 }

@@ -309,8 +309,7 @@ export default function CVDetailView({
                   Analysing Your CV
                 </h2>
                 <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Your CV is being analyzed by our AI. This usually takes 10-30
-                  seconds.
+                  Your CV is being analysed... This usually takes 10-30 seconds.
                   <br />
                   The page will automatically refresh when analysis is complete.
                 </p>
