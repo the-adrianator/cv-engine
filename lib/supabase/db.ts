@@ -21,7 +21,10 @@ type UsageTrackingUpdate =
   Database["public"]["Tables"]["usage_tracking"]["Update"];
 
 /**
- * Get or create a user record
+ * Get or create a user record (atomic operation)
+ * 
+ * Uses an atomic upsert to prevent race conditions when multiple
+ * concurrent requests try to create the same user.
  */
 export async function getOrCreateUser(
   userId: string,
@@ -31,33 +34,29 @@ export async function getOrCreateUser(
   try {
     const supabase = createServerClient();
 
-    // Try to get existing user
-    const { data: existingUser, error: fetchError } = await supabase
+    // Use atomic upsert to insert or update the user
+    // This prevents race conditions where two concurrent requests
+    // both try to insert the same user
+    const { data, error: upsertError } = await supabase
       .from("users")
-      .select("*")
-      .eq("id", userId)
-      .single();
-
-    if (existingUser) {
-      return { user: existingUser, error: null };
-    }
-
-    // Create new user if doesn't exist
-    const { data: newUser, error: insertError } = await supabase
-      .from("users")
-      .insert({
-        id: userId,
-        email,
-        full_name: fullName,
-      })
+      .upsert(
+        {
+          id: userId,
+          email,
+          full_name: fullName,
+        },
+        {
+          onConflict: "id",
+        }
+      )
       .select()
       .single();
 
-    if (insertError) {
-      return { user: null, error: insertError };
+    if (upsertError) {
+      return { user: null, error: upsertError };
     }
 
-    return { user: newUser, error: null };
+    return { user: data, error: null };
   } catch (error) {
     return {
       user: null,

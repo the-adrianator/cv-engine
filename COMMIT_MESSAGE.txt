@@ -1,18 +1,15 @@
-refactor: implement lazy Supabase client initialization
+refactor: use atomic upsert in getOrCreateUser
 
-Replace eager client initialization with lazy initialization to prevent
-app crashes at module load time when Supabase environment variables are
-missing. This improves developer experience and provides better error
-messages.
+Replace the read-then-insert pattern with a single atomic upsert operation
+to prevent race conditions when multiple concurrent requests try to create
+the same user record.
 
 Changes:
-- Add getSupabaseClient() function with lazy initialization
-- Check environment variables at call-time instead of module load
-- Provide detailed error messages listing missing environment variables
-- Include setup instructions in error messages
-- Add Proxy-based backward compatibility for existing supabase export
-- Update storage.ts to use getSupabaseClient() instead of direct export
-- Add error handling in getPublicUrl() to gracefully handle missing config
+- Use upsert with onConflict to atomically create or update user record
+- Remove separate read and insert operations
+- Simplify error handling with single upsert operation
+- Add documentation explaining the atomic operation and race condition prevention
 
-This allows the app to start even if Supabase isn't configured, and
-provides clearer guidance when configuration is needed.
+This ensures thread-safety and prevents duplicate key errors when multiple
+requests attempt to create a user simultaneously, improving reliability
+under concurrent load.
