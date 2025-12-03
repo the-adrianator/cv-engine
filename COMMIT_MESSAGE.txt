@@ -1,15 +1,24 @@
-refactor: use atomic upsert in getOrCreateUser
+docs: add job queue implementation guide and migration plan
 
-Replace the read-then-insert pattern with a single atomic upsert operation
-to prevent race conditions when multiple concurrent requests try to create
-the same user record.
+Add comprehensive documentation and example code for migrating from the
+unreliable unstable_after/IIFE background task pattern to a durable job
+queue system using Inngest.
 
 Changes:
-- Use upsert with onConflict to atomically create or update user record
-- Remove separate read and insert operations
-- Simplify error handling with single upsert operation
-- Add documentation explaining the atomic operation and race condition prevention
+- Add JOB_QUEUE_IMPLEMENTATION.md with detailed implementation guide
+- Add MIGRATION_TO_JOB_QUEUE.md with step-by-step migration instructions
+- Add example Inngest client configuration (lib/inngest/client.ts.example)
+- Add example Inngest route handler (app/api/inngest/route.ts.example)
+- Update upload route with warnings about current implementation limitations
+- Document that current background tasks are best-effort only
+- Add TODO comments recommending job queue for production reliability
 
-This ensures thread-safety and prevents duplicate key errors when multiple
-requests attempt to create a user simultaneously, improving reliability
-under concurrent load.
+The example files provide a complete Inngest implementation that includes:
+- Event-driven CV analysis with retry logic
+- Step-by-step processing with individual retries
+- Error handling and failure callbacks
+- Type-safe event schemas
+
+This prepares the codebase for a future migration to reliable background
+job processing while clearly documenting the limitations of the current
+approach.

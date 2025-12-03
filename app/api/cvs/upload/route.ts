@@ -192,10 +192,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Trigger CV analysis using unstable_after to attach to request lifecycle
-    // This ensures the analysis Promise is attached to the request lifecycle
-    // and will complete even after the response is sent
-    // Fallback to IIFE if unstable_after is not available
+    // Trigger CV analysis as a background task
+    // 
+    // ⚠️ IMPORTANT: This uses experimental/best-effort APIs that are NOT guaranteed
+    // to complete in serverless environments. Both unstable_after and the IIFE fallback
+    // can be terminated if the serverless runtime shuts down after the response is sent.
+    //
+    // Current implementation:
+    // - Uses unstable_after (Next.js 15+ experimental API) if available
+    // - Falls back to IIFE (fire-and-forget) if unstable_after is not available
+    // - Both approaches are best-effort only and may not complete reliably
+    //
+    // TODO: For production reliability, consider implementing a durable job queue:
+    // - Use a dedicated service (Inngest, Trigger.dev, BullMQ, etc.)
+    // - Enqueue analysis jobs with retry/visibility guarantees
+    // - Implement a worker process to consume and process jobs
+    // - This ensures analysis completes even if the API route terminates early
     const runAnalysis = async () => {
       try {
         console.log('Starting background CV analysis:', cv.id);
@@ -317,7 +329,10 @@ export async function POST(request: NextRequest) {
       }
     } catch {
       // Fallback: run as IIFE (fire-and-forget) if unstable_after not available
-      console.warn("unstable_after not available, using IIFE fallback");
+      // ⚠️ WARNING: This is best-effort only and may not complete in serverless environments
+      // The function may be terminated when the response is sent, especially on platforms
+      // with strict execution timeouts or cold starts.
+      console.warn("unstable_after not available, using IIFE fallback (best-effort only)");
       runAnalysis().catch((err) => {
         console.error("Background analysis error (IIFE fallback):", err);
       });
