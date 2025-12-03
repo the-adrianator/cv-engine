@@ -66,7 +66,7 @@ Supabase has been integrated into the application for database and file storage.
 
 **Note:** Since we're using Clerk for authentication (not Supabase Auth), storage policies won't work with `auth.uid()`. We'll handle file access control in application code using signed URLs, which is more secure anyway.
 
-#### 6. Update Environment Variables
+#### 5. Update Environment Variables
 
 Add to your `.env.local`:
 
@@ -76,7 +76,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 ```
 
-#### 7. Test the Setup
+#### 6. Test the Setup
 
 1. Restart your dev server: `npm run dev`
 2. Check for any errors in the console

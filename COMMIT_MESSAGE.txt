@@ -1,16 +1,27 @@
-fix: use admin client for storage uploads and improve UI
+refactor: organize documentation into docs/ directory
 
-Fix uploadFile to use createAdminClient() instead of getSupabaseClient()
-to ensure proper permissions for storage bucket uploads. Storage buckets
-with RLS require the service role key for uploads.
+Move all documentation files from the root directory to a dedicated docs/
+directory to improve project organization and reduce root directory clutter.
 
-Changes:
-- Switch uploadFile to use createAdminClient() for storage operations
-- Add security warning comment about server-side only usage
-- Clarify that client-side uploads should use /api/cvs/upload endpoint
-- Remove duplicate imports in CV detail API route
-- Fix British English spelling: "Analyzing" → "Analysing"
-- Add h-fit class to analysis loading state container for better layout
+Files moved:
+- ARCHITECTURE.md
+- CLERK_MIGRATION.md
+- COMPONENTS_MIGRATED.md
+- DEBUG_ANALYSIS.md
+- FIXES_APPLIED.md
+- JOB_QUEUE_IMPLEMENTATION.md
+- MIGRATION_GUIDE.md
+- MIGRATION_STATUS.md
+- MIGRATION_TO_JOB_QUEUE.md
+- OPENAI_SETUP.md
+- PDF_WORKER_FIX.md
+- QUICK_TEST_GUIDE.md
+- SCHEMA_FIX.md
+- SETUP.md
+- SUPABASE_SETUP.md
+- TESTING.md
+- TESTING_GUIDE.md
+- TESTING_OPENAI.md
 
-This ensures uploadFile has the correct permissions and prevents
-potential permission errors when uploading files to private storage buckets.
+This improves project structure by centralizing all documentation in one
+location, making it easier to find and maintain.
