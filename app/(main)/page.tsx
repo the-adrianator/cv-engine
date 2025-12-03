@@ -1,6 +1,7 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import type { Resume, Feedback } from "@/types";
 import CVCard from "@/components/cv/CVCard";
 import { getUserCVs, getOrCreateUser } from "@/lib/supabase/db";
 

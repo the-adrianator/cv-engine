@@ -1,15 +1,13 @@
-perf: optimize CSS transitions for better performance
+refactor: export types and use explicit imports
 
-Replace universal selector (*) with targeted selectors to improve rendering
-performance. The universal selector was causing performance issues by applying
-transitions to all elements, including those that don't need theme transitions.
+Export type definitions from types/index.d.ts and import them explicitly
+instead of relying on global type declarations. This improves type safety
+and makes dependencies clearer.
 
 Changes:
-- Remove universal selector (*) transition rule
-- Add .with-transition utility class for explicit transition control
-- Apply transitions only to interactive elements (buttons, links, cards, ARIA roles)
-- Include transform and opacity in transition properties for interactive elements
-- Maintain 0.3s ease timing for smooth theme switching
+- Export Job, Resume, and Feedback interfaces from types/index.d.ts
+- Add explicit type imports in app/(main)/page.tsx
+- Replace implicit global type usage with explicit imports
 
-This optimization reduces unnecessary style recalculations and improves
-page rendering performance, especially during theme transitions.
+This ensures types are properly scoped and makes it easier to track
+type dependencies across the codebase.
