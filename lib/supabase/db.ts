@@ -222,34 +222,33 @@ export async function getOrCreateUsageTracking(
   try {
     const supabase = createServerClient();
 
-    // Try to get existing usage
-    const { data: existingUsage, error: fetchError } = await supabase
+    // Atomically ensure a row exists for this user using an upsert.
+    // We only upsert the user_id so existing counters are not reset.
+    const { error: upsertError } = await supabase
+      .from("usage_tracking")
+      .upsert(
+        { user_id: userId },
+        {
+          onConflict: "user_id",
+        }
+      );
+
+    if (upsertError) {
+      return { usage: null, error: upsertError };
+    }
+
+    // Now safely read the row
+    const { data, error } = await supabase
       .from("usage_tracking")
       .select("*")
       .eq("user_id", userId)
       .single();
 
-    if (existingUsage) {
-      return { usage: existingUsage, error: null };
+    if (error) {
+      return { usage: null, error };
     }
 
-    // Create new usage tracking if doesn't exist
-    const { data: newUsage, error: insertError } = await supabase
-      .from("usage_tracking")
-      .insert({
-        user_id: userId,
-        scans_this_month: 0,
-        total_scans: 0,
-        last_reset_date: new Date().toISOString().split("T")[0],
-      })
-      .select()
-      .single();
-
-    if (insertError) {
-      return { usage: null, error: insertError };
-    }
-
-    return { usage: newUsage, error: null };
+    return { usage: data, error: null };
   } catch (error) {
     return {
       usage: null,
