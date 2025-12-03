@@ -266,8 +266,8 @@ export async function POST(request: NextRequest) {
         const { feedback, error: analysisError } = await analyzeCV(finalImageUrl, instructions);
         
         if (analysisError || !feedback) {
-          console.error("OpenAI analysis failed:", analysisError);
-          const errorMessage = analysisError?.message || "Analysis failed";
+          const errorMessage = analysisError || "Analysis failed";
+          console.error("OpenAI analysis failed:", errorMessage);
           await updateCVWithStatus({
             analysis_status: 'failed',
             analysis_error: errorMessage,

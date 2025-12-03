@@ -1,24 +1,13 @@
-docs: add job queue implementation guide and migration plan
+fix: correct error message extraction in CV upload analysis
 
-Add comprehensive documentation and example code for migrating from the
-unreliable unstable_after/IIFE background task pattern to a durable job
-queue system using Inngest.
+Fix error message handling when OpenAI analysis fails. The error may be
+a string rather than an Error object, so use it directly instead of
+accessing the message property.
 
 Changes:
-- Add JOB_QUEUE_IMPLEMENTATION.md with detailed implementation guide
-- Add MIGRATION_TO_JOB_QUEUE.md with step-by-step migration instructions
-- Add example Inngest client configuration (lib/inngest/client.ts.example)
-- Add example Inngest route handler (app/api/inngest/route.ts.example)
-- Update upload route with warnings about current implementation limitations
-- Document that current background tasks are best-effort only
-- Add TODO comments recommending job queue for production reliability
+- Use analysisError directly instead of analysisError?.message
+- Move console.error after errorMessage is set for consistency
+- Ensure error message is properly stored in database when analysis fails
 
-The example files provide a complete Inngest implementation that includes:
-- Event-driven CV analysis with retry logic
-- Step-by-step processing with individual retries
-- Error handling and failure callbacks
-- Type-safe event schemas
-
-This prepares the codebase for a future migration to reliable background
-job processing while clearly documenting the limitations of the current
-approach.
+This ensures that analysis errors are correctly captured and stored,
+regardless of whether the error is a string or Error object.
